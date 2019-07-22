@@ -37,6 +37,9 @@ object Main extends IOApp.WithContext {
 
     val resources = for {
       _ <- Resource.liftF(logger.info("Loading application resources"))
+      _ <- Resource.liftF(config.firefoxBinaryPath.fold(IO.unit) { path =>
+        IO(System.setProperty("webdriver.firefox.bin", path))
+      })
       _ <- Resource.liftF(
         IO(
           System.setProperty("webdriver.gecko.driver", config.geckoDriverPath)))

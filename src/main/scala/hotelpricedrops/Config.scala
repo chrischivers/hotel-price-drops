@@ -12,6 +12,7 @@ object Config {
 
   case class Config(emailerConfig: EmailerConfig,
                     geckoDriverPath: String,
+                    firefoxBinaryPath: Option[String],
                     timeBetweenRuns: FiniteDuration,
                     pageLoadWaitTime: FiniteDuration)
 
@@ -21,6 +22,7 @@ object Config {
     Config(
       config.as[EmailerConfig]("emailerConfig"),
       config.as[String]("geckoDriverPath"),
+      config.getAs[String]("firefoxBinaryPath"),
       config.as[FiniteDuration]("timeBetweenRuns"),
       config.as[FiniteDuration]("pageLoadWaitTime")
     )
