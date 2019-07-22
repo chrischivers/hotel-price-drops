@@ -34,18 +34,19 @@ object Comparer {
                 db.persist(hotel.name, details.price)) { previousPrice =>
                 if (details.price < previousPrice) {
                   val msg =
-                    s"Price for hotel $hotel dropping from #$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
+                    s"Price for hotel ${hotel.name} dropping from #$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
                   logger.info(msg) >>
                     notifier.notify(msg) >>
                     db.persist(hotel.name, details.price)
                 } else if (details.price > previousPrice) {
                   val msg =
-                    s"Price for hotel $hotel increasing from £$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
+                    s"Price for hotel ${hotel.name} increasing from £$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
                   logger.info(msg) >>
+                    notifier.notify(msg) >>
                     db.persist(hotel.name, details.price)
                 } else {
                   val msg =
-                    s"Price for hotel $hotel staying the same at £${details.price}"
+                    s"Price for hotel ${hotel.name} staying the same at £${details.price}"
                   logger.info(msg)
                 }
 

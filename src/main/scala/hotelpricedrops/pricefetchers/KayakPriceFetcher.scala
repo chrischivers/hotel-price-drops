@@ -9,8 +9,10 @@ import org.openqa.selenium.remote.RemoteWebDriver
 
 import scala.concurrent.duration._
 
-class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
-                                                 logger: Logger[IO])
+class KayakPriceFetcher(driver: RemoteWebDriver,
+                        pageLoadWaiTime: FiniteDuration)(
+    implicit timer: Timer[IO],
+    logger: Logger[IO])
     extends PriceFetcher {
 
   override def comparisonSite: Model.ComparisonSite = ComparisonSite("kayak")
@@ -19,7 +21,7 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
     for {
       _ <- logger.info(s"Looking up prices for hotel $hotel on Kayak")
       _ <- IO(driver.get(hotel.kayakUrl.renderString))
-      _ <- IO.sleep(15.seconds)
+      _ <- IO.sleep(pageLoadWaiTime)
       element <- IO(driver.findElementByClassName("top-deal"))
       seller <- IO(element.getAttribute("id"))
       price <- IO(element.findElement(By.className("price")).getText)

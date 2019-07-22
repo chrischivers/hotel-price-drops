@@ -1,5 +1,6 @@
 package hotelpricedrops
 
+import java.time.{Instant, LocalDateTime}
 import java.util.concurrent.Executors
 
 import cats.effect._
@@ -18,10 +19,6 @@ import scala.concurrent.ExecutionContext
 
 object Main extends IOApp.WithContext {
 
-  System.setProperty(
-    "webdriver.gecko.driver",
-    "/Users/chrichiv/Downloads/geckodriver") //todo remove from code
-
   override protected def executionContextResource
     : Resource[SyncIO, ExecutionContext] =
     Resource
@@ -36,26 +33,37 @@ object Main extends IOApp.WithContext {
     implicit val logger: SelfAwareStructuredLogger[IO] =
       Slf4jLogger.getLogger[IO]
 
+    val config = Config()
+
     val resources = for {
-      webDriver <- WebDriver(headless = false)
+      _ <- Resource.liftF(logger.info("Loading application resources"))
+      _ <- Resource.liftF(
+        IO(
+          System.setProperty("webdriver.gecko.driver", config.geckoDriverPath)))
+      webDriver <- WebDriver(headless = true)
       redis <- RedisDB.redisClientResource
-      config <- Resource.liftF(Config())
       notifier <- Resource.liftF(EmailNotifier(config.emailerConfig))
     } yield Resources(webDriver, RedisDB(redis), notifier)
 
-    resources.use { resources =>
-      val priceFetchers = List(new KayakPriceFetcher(resources.webDriver))
+    val runComparison = resources.use { resources =>
+      val priceFetchers = List(
+        new KayakPriceFetcher(resources.webDriver, config.pageLoadWaitTime))
 
       for {
-        _ <- logger.info("Starting run")
+        _ <- logger.info(s"Starting run at ${Instant.now().toString}")
         hotels <- Hotels.getHotelsFromFile("hotel-list.json")
         fetchResults <- hotels.traverse(hotel =>
           Hotels.pricesForHotel(hotel, priceFetchers).map((hotel, _)))
         _ <- Comparer.compare(resources.db, resources.notifier, fetchResults)
-      } yield {
-        ExitCode.Success
-      }
-
+      } yield ()
     }
+
+    def runner: IO[Unit] = {
+      runComparison
+        .flatMap(_ => timer.sleep(config.timeBetweenRuns))
+        .flatMap(_ => runner)
+    }
+
+    runner.map(_ => ExitCode.Success)
   }
 }
