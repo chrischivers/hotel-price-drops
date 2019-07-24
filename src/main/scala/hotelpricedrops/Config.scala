@@ -12,8 +12,7 @@ object Config {
 
   case class Config(emailerConfig: EmailerConfig,
                     geckoDriverPath: String,
-                    timeBetweenRuns: FiniteDuration,
-                    pageLoadWaitTime: FiniteDuration)
+                    timeBetweenRuns: FiniteDuration)
 
   //TODO put into effect
   def apply() = {
@@ -21,8 +20,7 @@ object Config {
     Config(
       config.as[EmailerConfig]("emailerConfig"),
       config.as[String]("geckoDriverPath"),
-      config.as[FiniteDuration]("timeBetweenRuns"),
-      config.as[FiniteDuration]("pageLoadWaitTime")
+      config.as[FiniteDuration]("timeBetweenRuns")
     )
   }
 }

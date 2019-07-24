@@ -46,8 +46,7 @@ object Main extends IOApp.WithContext {
     } yield Resources(webDriver, RedisDB(redis), notifier)
 
     val runComparison = resources.use { resources =>
-      val priceFetchers = List(
-        new KayakPriceFetcher(resources.webDriver, config.pageLoadWaitTime))
+      val priceFetchers = List(new KayakPriceFetcher(resources.webDriver))
 
       for {
         _ <- logger.info(s"Starting run at ${Instant.now().toString}")
