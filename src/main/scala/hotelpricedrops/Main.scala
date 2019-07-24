@@ -47,13 +47,17 @@ object Main extends IOApp.WithContext {
 
     val runComparison = resources.use { resources =>
       val priceFetchers = List(new KayakPriceFetcher(resources.webDriver))
+      val comparer = Comparer(resources.db, resources.notifier, config)
 
       for {
         _ <- logger.info(s"Starting run at ${Instant.now().toString}")
         hotels <- Hotels.getHotelsFromFile("hotel-list.json")
-        fetchResults <- hotels.traverse(hotel =>
-          Hotels.pricesForHotel(hotel, priceFetchers).map((hotel, _)))
-        _ <- Comparer.compare(resources.db, resources.notifier, fetchResults)
+        _ <- hotels.traverse { hotel =>
+          for {
+            results <- Hotels.pricesForHotel(hotel, priceFetchers)
+            _ <- comparer.compareAndNotify(hotel, results)
+          } yield ()
+        }
       } yield ()
     }
 

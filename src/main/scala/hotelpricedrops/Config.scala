@@ -12,7 +12,10 @@ object Config {
 
   case class Config(emailerConfig: EmailerConfig,
                     geckoDriverPath: String,
-                    timeBetweenRuns: FiniteDuration)
+                    timeBetweenRuns: FiniteDuration,
+                    emailOnPriceDecrease: Boolean,
+                    emailOnPriceIncrease: Boolean,
+                    emailOnPriceNoChange: Boolean)
 
   //TODO put into effect
   def apply() = {
@@ -20,7 +23,10 @@ object Config {
     Config(
       config.as[EmailerConfig]("emailerConfig"),
       config.as[String]("geckoDriverPath"),
-      config.as[FiniteDuration]("timeBetweenRuns")
+      config.as[FiniteDuration]("timeBetweenRuns"),
+      config.getAs[Boolean]("emailOnPriceDecrease").getOrElse(true),
+      config.getAs[Boolean]("emailOnPriceIncrease").getOrElse(false),
+      config.getAs[Boolean]("emailOnPriceNoChange").getOrElse(false)
     )
   }
 }

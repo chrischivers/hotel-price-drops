@@ -8,23 +8,29 @@ import cats.syntax.functor._
 import cats.syntax.flatMap._
 import cats.instances.list._
 import dev.profunktor.redis4cats.effect.Log
+import hotelpricedrops.Config._
 import hotelpricedrops.notifier.Notifier
 import io.chrisdavenport.log4cats.Logger
 
+trait Comparer {
+  def compareAndNotify(hotel: Hotel,
+                       results: List[(ComparisonSite, PriceDetails)]): IO[Unit]
+}
+
 object Comparer {
-  def compare(
-      db: DB,
-      notifier: Notifier,
-      fetchResults: List[(Hotel, List[(ComparisonSite, PriceDetails)])])(
-      implicit logger: Logger[IO]): IO[Unit] = {
 
-    def error(reason: String): IO[Unit] = {
-      logger.error(reason) >>
-        IO.raiseError(new RuntimeException(reason))
-    }
+  def apply(db: DB, notifier: Notifier, config: Config)(
+      implicit logger: Logger[IO]) =
+    new Comparer {
+      override def compareAndNotify(
+          hotel: Hotel,
+          results: List[(ComparisonSite, PriceDetails)]): IO[Unit] = {
 
-    fetchResults.traverse {
-      case (hotel, results) =>
+        def error(reason: String): IO[Unit] = {
+          logger.error(reason) >>
+            IO.raiseError(new RuntimeException(reason))
+        }
+
         val lowestPriceInResults = results.sortBy(_._2.price).headOption
         lowestPriceInResults.fold[IO[Unit]](error("No price results found")) {
           case (comparisonSite, details) =>
@@ -34,26 +40,29 @@ object Comparer {
                 db.persist(hotel.name, details.price)) { previousPrice =>
                 if (details.price < previousPrice) {
                   val msg =
-                    s"Price for hotel ${hotel.name} dropping from #$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
+                    s"Price for hotel ${hotel.name} dropping from £$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
                   logger.info(msg) >>
-                    notifier.notify(msg) >>
+                    (if (config.emailOnPriceDecrease) notifier.notify(msg)
+                     else IO.unit) >>
                     db.persist(hotel.name, details.price)
                 } else if (details.price > previousPrice) {
                   val msg =
                     s"Price for hotel ${hotel.name} increasing from £$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
                   logger.info(msg) >>
-                    notifier.notify(msg) >>
-                    db.persist(hotel.name, details.price)
+                    (if (config.emailOnPriceIncrease) notifier.notify(msg)
+                     else IO.unit)
+                  db.persist(hotel.name, details.price)
                 } else {
                   val msg =
                     s"Price for hotel ${hotel.name} staying the same at £${details.price}"
-                  logger.info(msg)
+                  (if (config.emailOnPriceNoChange) notifier.notify(msg)
+                   else IO.unit) >> logger.info(msg)
                 }
 
               }
             } yield ()
         }
-    }.void
-  }
+      }
+    }
 
 }
