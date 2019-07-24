@@ -58,6 +58,7 @@ object Main extends IOApp.WithContext {
             _ <- comparer.compareAndNotify(hotel, results)
           } yield ()
         }
+        _ <- logger.info(s"Finished run at ${Instant.now().toString}")
       } yield ()
     }
 

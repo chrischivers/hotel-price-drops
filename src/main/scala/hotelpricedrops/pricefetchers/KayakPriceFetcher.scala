@@ -35,7 +35,7 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
         case (_, price) => price
       } //todo make safer
       _ <- logger.info(
-        s"Found price of $lowestPrice on Kayak for hotel ${hotel.name} (on $lowestPriceId)")
+        s"Found price of £$lowestPrice on Kayak for hotel ${hotel.name} (on $lowestPriceId)")
     } yield {
       PriceDetails(lowestPriceId, lowestPrice)
     }
