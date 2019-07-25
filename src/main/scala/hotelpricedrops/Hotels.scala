@@ -1,12 +1,13 @@
 package hotelpricedrops
 
 import cats.effect.IO
-import hotelpricedrops.Model.{ComparisonSite, Hotel, PriceDetails}
-import hotelpricedrops.pricefetchers.{KayakPriceFetcher, PriceFetcher}
-import io.circe.syntax._
-import io.circe.parser._
-import cats.syntax.traverse._
 import cats.instances.list._
+import cats.syntax.traverse._
+import hotelpricedrops.Model.{ComparisonSite, Hotel, PriceDetails}
+import hotelpricedrops.pricefetchers.PriceFetcher
+import hotelpricedrops.util._
+import io.chrisdavenport.log4cats.Logger
+import io.circe.parser._
 
 import scala.io.Source
 
@@ -23,10 +24,13 @@ object Hotels {
     }
   }
 
-  def pricesForHotel(hotel: Hotel, priceFetchers: List[PriceFetcher])
-    : IO[List[(ComparisonSite, PriceDetails)]] = {
+  def pricesForHotel(hotel: Hotel, priceFetchers: List[PriceFetcher])(
+      implicit logger: Logger[IO]): IO[List[(ComparisonSite, PriceDetails)]] = {
     priceFetchers.traverse { fetcher =>
-      fetcher.getPriceDetailsFor(hotel).map((fetcher.comparisonSite, _))
+      fetcher
+        .getPriceDetailsFor(hotel)
+        .withRetry(3)
+        .map((fetcher.comparisonSite, _))
     }
   }
 }

@@ -14,6 +14,7 @@ import org.openqa.selenium.remote.RemoteWebDriver
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
+import hotelpricedrops.util._
 
 class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
                                                  logger: Logger[IO])
@@ -28,7 +29,7 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
     for {
       _ <- logger.info(s"Looking up prices for hotel ${hotel.name} on Kayak")
       _ <- IO(driver.get(hotel.kayakUrl.renderString))
-        .withRetry(attemptsRemaining = 3)
+        .withRetry(attempts = 3)
       _ <- wait(driver)
       elements <- IO(driver.findElementsByClassName("provider").asScala.toList)
       idPriceList <- elements.traverse(priceFromProviderElement).map(_.flatten)
@@ -54,20 +55,6 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
             .toInt)
       } else None
       price.map((id, _))
-    }
-  }
-
-  implicit class IOOps[T](io: IO[T]) {
-    def withRetry(attemptsRemaining: Int): IO[T] = {
-      io.attempt.flatMap {
-        case Left(err) =>
-          logger.error(err.getMessage) >>
-            (if (attemptsRemaining > 1) {
-               logger.info(s"retrying another ${attemptsRemaining - 1} times") >> withRetry(
-                 attemptsRemaining - 1)
-             } else logger.info("No more retries") >> IO.raiseError(err))
-        case Right(t) => IO.pure(t)
-      }
     }
   }
 
