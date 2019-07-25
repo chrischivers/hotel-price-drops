@@ -42,20 +42,23 @@ object Comparer {
                   val msg =
                     s"Price for hotel ${hotel.name} dropping from £$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
                   logger.info(msg) >>
-                    (if (config.emailOnPriceDecrease) notifier.notify(msg)
+                    (if (config.emailOnPriceDecrease)
+                       notifier.notify(msg, details.screenshot)
                      else IO.unit) >>
                     db.persist(hotel.name, details.price)
                 } else if (details.price > previousPrice) {
                   val msg =
                     s"Price for hotel ${hotel.name} increasing from £$previousPrice to £${details.price} \n(found on ${comparisonSite.name}"
                   logger.info(msg) >>
-                    (if (config.emailOnPriceIncrease) notifier.notify(msg)
+                    (if (config.emailOnPriceIncrease)
+                       notifier.notify(msg, details.screenshot)
                      else IO.unit)
                   db.persist(hotel.name, details.price)
                 } else {
                   val msg =
                     s"Price for hotel ${hotel.name} staying the same at £${details.price}"
-                  (if (config.emailOnPriceNoChange) notifier.notify(msg)
+                  (if (config.emailOnPriceNoChange)
+                     notifier.notify(msg, details.screenshot)
                    else IO.unit) >> logger.info(msg)
                 }
 

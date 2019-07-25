@@ -3,8 +3,16 @@ package hotelpricedrops.notifier
 import cats.effect.IO
 import cats.syntax.flatMap._
 import java.util.Properties
+
 import io.chrisdavenport.log4cats.Logger
-import javax.mail.internet.{InternetAddress, MimeMessage}
+import javax.activation.DataHandler
+import javax.mail.internet.{
+  InternetAddress,
+  MimeBodyPart,
+  MimeMessage,
+  MimeMultipart
+}
+import javax.mail.util.ByteArrayDataSource
 import javax.mail.{Session, _}
 
 object EmailNotifier {
@@ -38,7 +46,8 @@ object EmailNotifier {
       )
       session.setDebug(false)
 
-      override def notify(message: String): IO[Unit] = {
+      override def notify(message: String,
+                          screenshot: Array[Byte]): IO[Unit] = {
         val mimeMessage = new MimeMessage(session)
 
         mimeMessage.setFrom(new InternetAddress(emailerConfig.fromAddress))
@@ -46,6 +55,16 @@ object EmailNotifier {
                                  new InternetAddress(emailerConfig.toAddress))
         mimeMessage.setSubject("Hotel Price Drop Notification")
         mimeMessage.setText(message, "utf-8", "html")
+
+        val attachment = new MimeBodyPart()
+        val bds = new ByteArrayDataSource(screenshot, "screenshot.png")
+        attachment.setDataHandler(new DataHandler(bds))
+        attachment.setFileName(bds.getName)
+
+        val multipart = new MimeMultipart()
+        multipart.addBodyPart(attachment)
+
+        mimeMessage.setContent(multipart)
 
         logger.info(s"Sending email to ${emailerConfig.toAddress}") >>
           IO(Transport.send(mimeMessage))

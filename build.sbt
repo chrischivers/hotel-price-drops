@@ -20,5 +20,4 @@ libraryDependencies ++= Seq(
   "javax.mail" % "mail" % "1.5.0-b01",
   "com.typesafe" % "config" % "1.3.4",
   "com.iheart" %% "ficus" % "1.4.7"
-
 )

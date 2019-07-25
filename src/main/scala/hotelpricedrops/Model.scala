@@ -7,7 +7,7 @@ import io.circe.generic.semiauto._
 object Model {
 
   case class ComparisonSite(name: String)
-  case class PriceDetails(seller: String, price: Int)
+  case class PriceDetails(seller: String, price: Int, screenshot: Array[Byte])
   case class Hotel(name: String, kayakUrl: Uri)
 
   object Hotel {

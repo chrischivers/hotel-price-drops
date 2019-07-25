@@ -3,20 +3,20 @@ package hotelpricedrops.pricefetchers
 import java.time.Instant
 
 import cats.effect.{IO, Timer}
-import cats.syntax.traverse._
-import cats.syntax.flatMap._
 import cats.instances.list._
+import cats.syntax.flatMap._
+import cats.syntax.traverse._
 import hotelpricedrops.Model
 import hotelpricedrops.Model.{ComparisonSite, Hotel, PriceDetails}
 import io.chrisdavenport.log4cats.Logger
-import org.openqa.selenium.{By, OutputType, WebElement}
 import org.openqa.selenium.remote.RemoteWebDriver
+import org.openqa.selenium.{By, OutputType, WebElement}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
-                                                 logger: Logger[IO])
+class TrivagoPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
+                                                   logger: Logger[IO])
     extends PriceFetcher {
 
   val maxLoadWaitTime: FiniteDuration = 2.minutes
