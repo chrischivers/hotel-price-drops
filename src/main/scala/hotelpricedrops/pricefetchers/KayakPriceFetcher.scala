@@ -28,9 +28,10 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
     for {
       _ <- logger.info(s"Looking up prices for hotel ${hotel.name} on Kayak")
       _ <- IO(driver.get(hotel.kayakUrl.renderString))
+        .withRetry(attemptsRemaining = 3)
       _ <- wait(driver)
       elements <- IO(driver.findElementsByClassName("provider").asScala.toList)
-      idPriceList <- elements.traverse(priceFromProividerElement).map(_.flatten)
+      idPriceList <- elements.traverse(priceFromProviderElement).map(_.flatten)
       (lowestPriceId, lowestPrice) = idPriceList.minBy {
         case (_, price) => price
       } //todo make safer
@@ -40,7 +41,7 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
       PriceDetails(lowestPriceId, lowestPrice)
     }
 
-  private def priceFromProividerElement(element: WebElement) = {
+  private def priceFromProviderElement(element: WebElement) = {
     IO {
       val id = element.getAttribute("id").trim
       val price = if (id.nonEmpty) {
@@ -55,12 +56,29 @@ class KayakPriceFetcher(driver: RemoteWebDriver)(implicit timer: Timer[IO],
     }
   }
 
+  implicit class IOOps[T](io: IO[T]) {
+    def withRetry(attemptsRemaining: Int): IO[T] = {
+      io.attempt.flatMap {
+        case Left(err) =>
+          logger.error(err.getMessage) >>
+            (if (attemptsRemaining > 1) {
+               logger.info(s"retrying another ${attemptsRemaining - 1} times") >> withRetry(
+                 attemptsRemaining - 1)
+             } else logger.info("No more retries") >> IO.raiseError(err))
+        case Right(t) => IO.pure(t)
+      }
+    }
+  }
+
   private def wait(driver: RemoteWebDriver) =
-    waitToBeReady(
-      maxLoadWaitTime,
-      timeBetweenLoadReadyChecks,
-      d =>
-        IO(d.findElementsByClassName("price").asScala.toList.nonEmpty))(driver)
+    waitToBeReady(maxLoadWaitTime,
+                  timeBetweenLoadReadyChecks,
+                  d =>
+                    IO(
+                      d.findElementsByClassName("price")
+                        .asScala
+                        .toList
+                        .exists(_.getText.headOption.contains('£'))))(driver)
 
   private def waitToBeReady(maxLoadWaitTime: FiniteDuration,
                             timeBetweenLoadReadyAttempts: FiniteDuration,
