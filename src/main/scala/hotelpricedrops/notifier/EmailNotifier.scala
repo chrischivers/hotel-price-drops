@@ -57,9 +57,9 @@ object EmailNotifier {
         mimeMessage.setText(message, "utf-8", "html")
 
         val attachment = new MimeBodyPart()
-        val bds = new ByteArrayDataSource(screenshot, "screenshot.png")
+        val bds = new ByteArrayDataSource(screenshot, "image/png")
         attachment.setDataHandler(new DataHandler(bds))
-        attachment.setFileName(bds.getName)
+        attachment.setFileName("screenshot.png")
 
         val multipart = new MimeMultipart()
         multipart.addBodyPart(attachment)
