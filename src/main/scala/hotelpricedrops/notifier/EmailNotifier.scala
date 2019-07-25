@@ -54,7 +54,9 @@ object EmailNotifier {
         mimeMessage.setRecipient(javax.mail.Message.RecipientType.TO,
                                  new InternetAddress(emailerConfig.toAddress))
         mimeMessage.setSubject("Hotel Price Drop Notification")
-        mimeMessage.setText(message, "utf-8", "html")
+
+        val body = new MimeBodyPart()
+        body.setText(message, "utf-8", "html")
 
         val attachment = new MimeBodyPart()
         val bds = new ByteArrayDataSource(screenshot, "image/png")
@@ -62,6 +64,7 @@ object EmailNotifier {
         attachment.setFileName("screenshot.png")
 
         val multipart = new MimeMultipart()
+        multipart.addBodyPart(body)
         multipart.addBodyPart(attachment)
 
         mimeMessage.setContent(multipart)
