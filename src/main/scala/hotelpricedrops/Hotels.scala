@@ -3,7 +3,7 @@ package hotelpricedrops
 import cats.effect.IO
 import cats.instances.list._
 import cats.syntax.traverse._
-import hotelpricedrops.Model.{ComparisonSite, Hotel, PriceDetails}
+import hotelpricedrops.Model.Hotel
 import hotelpricedrops.pricefetchers.PriceFetcher
 import hotelpricedrops.util._
 import io.chrisdavenport.log4cats.Logger
@@ -25,12 +25,13 @@ object Hotels {
   }
 
   def pricesForHotel(hotel: Hotel, priceFetchers: List[PriceFetcher])(
-      implicit logger: Logger[IO]): IO[List[(ComparisonSite, PriceDetails)]] = {
-    priceFetchers.traverse { fetcher =>
-      fetcher
-        .getPriceDetailsFor(hotel)
-        .withRetry(3)
-        .map((fetcher.comparisonSite, _))
-    }
+      implicit logger: Logger[IO]): IO[List[PriceFetcher.Results]] = {
+    priceFetchers
+      .traverse { fetcher =>
+        fetcher
+          .getPriceDetailsFor(hotel)
+          .withRetry(3)
+      }
+      .map(_.flatten)
   }
 }

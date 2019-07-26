@@ -4,6 +4,8 @@ import cats.effect.IO
 import cats.syntax.flatMap._
 import java.util.Properties
 
+import hotelpricedrops.Model.Screenshot
+import hotelpricedrops.pricefetchers.PriceFetcher.ErrorString
 import io.chrisdavenport.log4cats.Logger
 import javax.activation.DataHandler
 import javax.mail.internet.{
@@ -46,20 +48,21 @@ object EmailNotifier {
       )
       session.setDebug(false)
 
-      override def notify(message: String,
-                          screenshot: Array[Byte]): IO[Unit] = {
+      private def notify(subject: String,
+                         bodyStr: String,
+                         screenshot: Screenshot) = {
         val mimeMessage = new MimeMessage(session)
 
         mimeMessage.setFrom(new InternetAddress(emailerConfig.fromAddress))
         mimeMessage.setRecipient(javax.mail.Message.RecipientType.TO,
                                  new InternetAddress(emailerConfig.toAddress))
-        mimeMessage.setSubject("Hotel Price Drop Notification")
+        mimeMessage.setSubject(subject)
 
         val body = new MimeBodyPart()
-        body.setText(message, "utf-8", "html")
+        body.setText(bodyStr, "utf-8", "html")
 
         val attachment = new MimeBodyPart()
-        val bds = new ByteArrayDataSource(screenshot, "image/png")
+        val bds = new ByteArrayDataSource(screenshot.value, "image/png")
         attachment.setDataHandler(new DataHandler(bds))
         attachment.setFileName("screenshot.png")
 
@@ -72,6 +75,14 @@ object EmailNotifier {
         logger.info(s"Sending email to ${emailerConfig.toAddress}") >>
           IO(Transport.send(mimeMessage))
       }
+
+      override def priceNotify(message: String,
+                               screenshot: Screenshot): IO[Unit] =
+        notify("Hotel Price Drop Notification", message, screenshot)
+
+      override def errorNotify(error: ErrorString,
+                               screenshot: Screenshot): IO[Unit] =
+        notify("Hotel Price Drop: Error", error, screenshot)
     }
   }
 }

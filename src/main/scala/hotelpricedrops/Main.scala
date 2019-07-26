@@ -10,7 +10,7 @@ import cats.syntax.flatMap._
 import dev.profunktor.redis4cats.log4cats._
 import hotelpricedrops.db.{DB, RedisDB}
 import hotelpricedrops.notifier.{EmailNotifier, Notifier}
-import hotelpricedrops.pricefetchers.KayakPriceFetcher
+import hotelpricedrops.pricefetchers.PriceFetcher
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import org.openqa.selenium.remote.RemoteWebDriver
@@ -46,7 +46,15 @@ object Main extends IOApp.WithContext {
     } yield Resources(webDriver, RedisDB(redis), notifier)
 
     val runComparison = resources.use { resources =>
-      val priceFetchers = List(new KayakPriceFetcher(resources.webDriver))
+      val priceFetchers =
+        List(
+          PriceFetcher(resources.webDriver,
+                       ComparisonSite.Kayak,
+                       resources.notifier.errorNotify),
+          PriceFetcher(resources.webDriver,
+                       ComparisonSite.SkyScanner,
+                       resources.notifier.errorNotify)
+        )
       val comparer = Comparer(resources.db, resources.notifier, config)
 
       for {

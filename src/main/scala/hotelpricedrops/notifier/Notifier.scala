@@ -1,7 +1,10 @@
 package hotelpricedrops.notifier
 
 import cats.effect.IO
+import hotelpricedrops.Model.Screenshot
+import hotelpricedrops.pricefetchers.PriceFetcher.ErrorString
 
 trait Notifier {
-  def notify(message: String, screenshot: Array[Byte]): IO[Unit]
+  def priceNotify(message: String, screenshot: Screenshot): IO[Unit]
+  def errorNotify(error: ErrorString, screenshot: Screenshot): IO[Unit]
 }
