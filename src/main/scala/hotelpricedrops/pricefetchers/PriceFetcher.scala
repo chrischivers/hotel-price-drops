@@ -10,7 +10,7 @@ import org.openqa.selenium.remote.RemoteWebDriver
 import cats.effect.{IO, Timer}
 import cats.syntax.flatMap._
 import hotelpricedrops.ComparisonSite
-import hotelpricedrops.Model.{Hotel, PriceDetails, Screenshot}
+import hotelpricedrops.Model.{Hotel, PriceDetails, ReportedRateType, Screenshot}
 import hotelpricedrops.util._
 import io.chrisdavenport.log4cats.Logger
 import org.openqa.selenium.remote.RemoteWebDriver
@@ -57,8 +57,13 @@ object PriceFetcher {
             _ <- IO(driver.get(url.renderString)).withRetry(3)
             _ <- waitToBeReady(driver)()
             priceDetails <- comparisonSite.getLowestPrice(driver)
+            nightlyPrice = comparisonSite.reportedRateType match {
+              case ReportedRateType.Nightly => priceDetails.price
+              case ReportedRateType.Entirety =>
+                priceDetails.price / 7 //todo fix
+            }
             _ <- logger.info(
-              s"Found price of £${priceDetails.price} on ${comparisonSite.name} for hotel ${hotel.name} (on ${priceDetails.seller})")
+              s"Found nightly price of £$nightlyPrice on ${comparisonSite.name} for hotel ${hotel.name} (on ${priceDetails.seller})")
             screenshot <- IO(driver.getScreenshotAs(OutputType.BYTES))
           } yield {
             Some(
