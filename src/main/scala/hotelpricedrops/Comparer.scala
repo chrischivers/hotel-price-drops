@@ -3,7 +3,7 @@ package hotelpricedrops
 import cats.effect.IO
 import cats.syntax.flatMap._
 import hotelpricedrops.Config._
-import hotelpricedrops.Model.{Hotel, PriceDetails, Screenshot}
+import hotelpricedrops.Model.{Hotel, PriceDetails, ReportedRateType, Screenshot}
 import hotelpricedrops.db.DB
 import hotelpricedrops.notifier.Notifier
 import hotelpricedrops.pricefetchers.PriceFetcher
@@ -28,8 +28,18 @@ object Comparer {
             IO.raiseError(new RuntimeException(reason))
         }
 
+        val resultsAdjustedForRateType = results.map { result =>
+          result.comparisonSite.reportedRateType match {
+            case ReportedRateType.Nightly => result
+            case ReportedRateType.Entirety =>
+              result.copy(
+                priceDetails = result.priceDetails.copy(
+                  price = result.priceDetails.price / 7)) //todo handle number of nights somewhere
+          }
+        }
         val lowestPriceInResults =
-          results.sortBy(_.priceDetails.price).headOption
+          resultsAdjustedForRateType.sortBy(_.priceDetails.price).headOption
+
         lowestPriceInResults.fold[IO[Unit]](error("No price results found")) {
           result =>
             for {

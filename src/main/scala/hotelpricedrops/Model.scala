@@ -1,7 +1,6 @@
 package hotelpricedrops
 
 import cats.effect.IO
-import hotelpricedrops.pricefetchers.PriceFetcher.PriceFetcherSpec
 import io.circe.{Decoder, Encoder}
 import org.http4s.Uri
 import io.circe.generic.semiauto._
@@ -13,6 +12,16 @@ object Model {
   case class Screenshot(value: Array[Byte])
 
   case class PriceDetails(seller: String, price: Int, url: Uri)
+
+  sealed trait ReportedRateType
+
+  object ReportedRateType {
+
+    case object Nightly extends ReportedRateType
+
+    case object Entirety extends ReportedRateType
+
+  }
 
   case class Hotel(name: String,
                    kayakUrl: Option[Uri],

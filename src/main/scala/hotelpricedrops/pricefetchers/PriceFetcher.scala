@@ -34,10 +34,6 @@ object PriceFetcher {
                      priceDetails: PriceDetails,
                      screenshot: Screenshot)
 
-  case class PriceFetcherSpec(
-      waitToBeReadyCondition: RemoteWebDriver => IO[Boolean],
-      getLowestPrice: RemoteWebDriver => IO[PriceDetails])
-
   def apply(driver: RemoteWebDriver,
             site: ComparisonSite,
             notifyOnError: (ErrorString, Screenshot) => IO[Unit])(
@@ -60,8 +56,7 @@ object PriceFetcher {
               s"Looking up prices for hotel ${hotel.name} on ${comparisonSite.name}")
             _ <- IO(driver.get(url.renderString)).withRetry(3)
             _ <- waitToBeReady(driver)()
-            priceDetails <- comparisonSite.priceFetcherSpec.getLowestPrice(
-              driver)
+            priceDetails <- comparisonSite.getLowestPrice(driver)
             _ <- logger.info(
               s"Found price of £${priceDetails.price} on ${comparisonSite.name} for hotel ${hotel.name} (on ${priceDetails.seller})")
             screenshot <- IO(driver.getScreenshotAs(OutputType.BYTES))
@@ -102,7 +97,7 @@ object PriceFetcher {
       val startTime = Instant.now
 
       def helper: IO[Unit] =
-        comparisonSite.priceFetcherSpec
+        comparisonSite
           .waitToBeReadyCondition(remoteWebDriver)
           .flatMap {
             case true => IO.unit
