@@ -10,6 +10,7 @@ import io.chrisdavenport.log4cats.Logger
 import io.circe.parser._
 
 import scala.io.Source
+import cats.syntax.flatMap._
 
 object Hotels {
 
@@ -31,6 +32,11 @@ object Hotels {
         fetcher
           .getPriceDetailsFor(hotel)
           .withRetry(3)
+          .handleErrorWith { err =>
+            logger.error(
+              s"Error after retries for ${hotel.name} on ${fetcher.comparisonSite.name}. Error [$err]") >>
+              IO.pure(None)
+          }
       }
       .map(_.flatten)
   }

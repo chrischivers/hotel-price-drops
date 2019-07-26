@@ -40,8 +40,9 @@ object Comparer {
                   if (result.priceDetails.price < previousPrice) {
                     val msg =
                       s"Price for hotel ${hotel.name} dropping from £$previousPrice to £${result.priceDetails.price} " +
-                        s"\nSeller: ${result.priceDetails.seller}"
-                    s"\nFound on: ${result.comparisonSite.name}"
+                        s"\nSeller: ${result.priceDetails.seller}" +
+                        s"\nFound on: ${result.comparisonSite.name}" +
+                        s"\nUrl: ${result.priceDetails.url.renderString}"
                     logger.info(msg) >>
                       (if (config.emailOnPriceDecrease)
                          notifier.priceNotify(msg, result.screenshot)
@@ -50,8 +51,9 @@ object Comparer {
                   } else if (result.priceDetails.price > previousPrice) {
                     val msg =
                       s"Price for hotel ${hotel.name} increasing from £$previousPrice to £${result.priceDetails.price} " +
-                        s"\nSeller: ${result.priceDetails.seller}"
-                    s"\nFound on: ${result.comparisonSite.name}"
+                        s"\nSeller: ${result.priceDetails.seller}" +
+                        s"\nFound on: ${result.comparisonSite.name}" +
+                        s"\nUrl: ${result.priceDetails.url.renderString}"
                     logger.info(msg) >>
                       (if (config.emailOnPriceIncrease)
                          notifier.priceNotify(msg, result.screenshot)

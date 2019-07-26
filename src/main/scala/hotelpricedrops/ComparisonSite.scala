@@ -5,6 +5,7 @@ import cats.syntax.traverse._
 import cats.instances.list._
 import hotelpricedrops.Model.PriceDetails
 import hotelpricedrops.pricefetchers.PriceFetcher.PriceFetcherSpec
+import org.http4s.Uri
 import org.openqa.selenium.{By, WebElement}
 import org.openqa.selenium.remote.RemoteWebDriver
 
@@ -54,7 +55,10 @@ object ComparisonSite {
           (lowestPriceSeller, lowestPrice) = sellerPriceList.minBy {
             case (_, price) => price
           }
-        } yield PriceDetails(lowestPriceSeller, lowestPrice)
+        } yield
+          PriceDetails(lowestPriceSeller,
+                       lowestPrice,
+                       Uri.unsafeFromString(driver.getCurrentUrl))
 
       PriceFetcherSpec(waitCondition, getLowestPrice)
     }

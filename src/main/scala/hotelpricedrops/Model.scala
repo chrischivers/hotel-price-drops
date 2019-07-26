@@ -12,7 +12,7 @@ object Model {
 
   case class Screenshot(value: Array[Byte])
 
-  case class PriceDetails(seller: String, price: Int)
+  case class PriceDetails(seller: String, price: Int, url: Uri)
 
   case class Hotel(name: String,
                    kayakUrl: Option[Uri],
