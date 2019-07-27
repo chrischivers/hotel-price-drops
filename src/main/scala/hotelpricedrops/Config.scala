@@ -15,7 +15,8 @@ object Config {
                     timeBetweenRuns: FiniteDuration,
                     emailOnPriceDecrease: Boolean,
                     emailOnPriceIncrease: Boolean,
-                    emailOnPriceNoChange: Boolean)
+                    emailOnPriceNoChange: Boolean,
+                    screenshotOnError: Boolean)
 
   //TODO put into effect
   def apply() = {
@@ -26,7 +27,8 @@ object Config {
       config.as[FiniteDuration]("timeBetweenRuns"),
       config.getAs[Boolean]("emailOnPriceDecrease").getOrElse(true),
       config.getAs[Boolean]("emailOnPriceIncrease").getOrElse(false),
-      config.getAs[Boolean]("emailOnPriceNoChange").getOrElse(false)
+      config.getAs[Boolean]("emailOnPriceNoChange").getOrElse(false),
+      config.getAs[Boolean]("screenshotOnError").getOrElse(false)
     )
   }
 }

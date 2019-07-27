@@ -50,9 +50,11 @@ object Main extends IOApp.WithContext {
         List(
           PriceFetcher(resources.webDriver,
                        ComparisonSite.Kayak,
+                       config.screenshotOnError,
                        resources.notifier.errorNotify),
           PriceFetcher(resources.webDriver,
                        ComparisonSite.SkyScanner,
+                       config.screenshotOnError,
                        resources.notifier.errorNotify)
         )
       val comparer = Comparer(resources.db, resources.notifier, config)

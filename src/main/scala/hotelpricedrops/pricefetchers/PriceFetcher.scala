@@ -36,6 +36,7 @@ object PriceFetcher {
 
   def apply(driver: RemoteWebDriver,
             site: ComparisonSite,
+            screenshotOnError: Boolean,
             notifyOnError: (ErrorString, Screenshot) => IO[Unit])(
       implicit timer: Timer[IO],
       logger: Logger[IO]) = new PriceFetcher {
@@ -72,10 +73,11 @@ object PriceFetcher {
           }
 
           getResults.handleErrorWith { err =>
-            IO(driver.getScreenshotAs(OutputType.BYTES))
-              .map(Screenshot)
-              .flatMap(screenshot => notifyOnError(err.toString, screenshot)) >> IO
-              .raiseError(err)
+            (if (screenshotOnError) {
+               IO(driver.getScreenshotAs(OutputType.BYTES))
+                 .map(Screenshot)
+                 .flatMap(screenshot => notifyOnError(err.toString, screenshot))
+             } else IO.unit) >> IO.raiseError(err)
           }
         }
     }
