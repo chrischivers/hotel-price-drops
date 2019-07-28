@@ -47,22 +47,29 @@ object Application {
       _ <- DBStaticLoader.populateSearches(searchesDb)
       searches <- searchesDb.allSearches
       - <- searches.traverse { search =>
-        processSearch(search, hotelsDb, priceFetchers, comparer)
+        processSearch(
+          search,
+          hotelsDb,
+          priceFetchers,
+          comparer,
+          resources.config.emailerConfig.errorSentTo) //TODO set email address properly from DB
       }
       _ <- logger.info(s"Finished run at ${Instant.now().toString}")
     } yield ()
   }
 
-  def processSearch(search: Search.WithId,
-                    hotelsDB: HotelsDB,
-                    priceFetchers: List[PriceFetcher],
-                    comparer: Comparer)(implicit logger: Logger[IO]) = {
+  def processSearch(
+      search: Search.WithId,
+      hotelsDB: HotelsDB,
+      priceFetchers: List[PriceFetcher],
+      comparer: Comparer,
+      toAddress: String)(implicit logger: Logger[IO]) = { //TODO put to address into db
     for {
       allHotels <- hotelsDB.allHotels
       _ <- allHotels.traverse { hotel =>
         Hotels.pricesForHotel(hotel.withoutid, priceFetchers).flatMap {
           results =>
-            comparer.compareAndNotify(hotel, search, results)
+            comparer.compareAndNotify(hotel, search, toAddress, results)
         }
       }
     } yield ()

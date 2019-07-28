@@ -11,8 +11,11 @@ import doobie.implicits._
 
 trait ResultsDB {
   def persistResult(result: Result): IO[Unit]
-  def lowestPriceFor(searchId: Int,
-                     hotelId: Int): IO[Option[Result.WithIdAndTimestamp]]
+  def allTimeLowestPriceFor(searchId: Int,
+                            hotelId: Int): IO[Option[Result.WithIdAndTimestamp]]
+  def mostRecentLowestPriceFor(
+      searchId: Int,
+      hotelId: Int): IO[Option[Result.WithIdAndTimestamp]]
 }
 
 object ResultsDB {
@@ -25,13 +28,27 @@ object ResultsDB {
         .void
     }
 
-    override def lowestPriceFor(
+    override def allTimeLowestPriceFor(
         searchId: Int,
         hotelId: Int): IO[Option[Result.WithIdAndTimestamp]] = {
       sql"""SELECT id, search_id, hotel_id, lowest_price, comparison_site_name, timestamp 
            |FROM results
            |WHERE search_id = ${searchId} AND hotel_id = ${hotelId}
            |ORDER BY lowest_price ASC
+           |LIMIT 1
+           |""".stripMargin
+        .query[Result.WithIdAndTimestamp]
+        .option
+        .transact(transactor)
+    }
+
+    override def mostRecentLowestPriceFor(
+        searchId: Int,
+        hotelId: Int): IO[Option[Result.WithIdAndTimestamp]] = {
+      sql"""SELECT id, search_id, hotel_id, lowest_price, comparison_site_name, timestamp 
+           |FROM results
+           |WHERE search_id = ${searchId} AND hotel_id = ${hotelId}
+           |ORDER BY timestamp DESC
            |LIMIT 1
            |""".stripMargin
         .query[Result.WithIdAndTimestamp]

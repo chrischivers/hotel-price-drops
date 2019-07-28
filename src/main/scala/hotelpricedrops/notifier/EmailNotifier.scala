@@ -20,7 +20,7 @@ import javax.mail.{Session, _}
 object EmailNotifier {
 
   case class EmailerConfig(fromAddress: String,
-                           toAddress: String,
+                           errorSentTo: String,
                            smtpHost: String,
                            smtpPort: Int,
                            smtpUsername: String,
@@ -51,12 +51,13 @@ object EmailNotifier {
 
       private def notify(subject: String,
                          bodyStr: String,
+                         to: String,
                          screenshot: Screenshot) = {
         val mimeMessage = new MimeMessage(session)
 
         mimeMessage.setFrom(new InternetAddress(emailerConfig.fromAddress))
         mimeMessage.setRecipient(javax.mail.Message.RecipientType.TO,
-                                 new InternetAddress(emailerConfig.toAddress))
+                                 new InternetAddress(to))
         mimeMessage.setSubject(subject)
 
         val body = new MimeBodyPart()
@@ -71,19 +72,24 @@ object EmailNotifier {
         multipart.addBodyPart(body)
         multipart.addBodyPart(attachment)
 
-        mimeMessage.setContent(multipart)
+        mimeMessage.setContent(multipart, "text/html")
 
-        logger.info(s"Sending email to ${emailerConfig.toAddress}") >>
+        logger.info(s"Sending email to $to") >>
           IO(Transport.send(mimeMessage))
       }
 
-      override def priceNotify(message: String,
-                               screenshot: Screenshot): IO[Unit] =
-        notify("Hotel Price Drop Notification", message, screenshot)
+      override def priceNotify(pn: PriceNotification,
+                               screenshot: Screenshot): IO[Unit] = {
+
+        notify(pn.subject, pn.toHtml, pn.to, screenshot)
+      }
 
       override def errorNotify(error: ErrorString,
                                screenshot: Screenshot): IO[Unit] =
-        notify("Hotel Price Drop: Error", error, screenshot)
+        notify("Hotel Price Drop: Error",
+               error,
+               emailerConfig.errorSentTo,
+               screenshot)
     }
   }
 }

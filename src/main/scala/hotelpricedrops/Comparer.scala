@@ -5,13 +5,14 @@ import cats.syntax.flatMap._
 import hotelpricedrops.Config._
 import hotelpricedrops.Model.{Hotel, ReportedRateType, Result, Search}
 import hotelpricedrops.db.ResultsDB
-import hotelpricedrops.notifier.Notifier
+import hotelpricedrops.notifier.{Notifier, PriceNotification}
 import hotelpricedrops.pricefetchers.PriceFetcher
 import io.chrisdavenport.log4cats.Logger
 
 trait Comparer {
   def compareAndNotify(hotel: Hotel.WithId,
                        search: Search.WithId,
+                       toAddress: String, //TODO put into database
                        results: List[PriceFetcher.Results]): IO[Unit]
 }
 
@@ -23,6 +24,7 @@ object Comparer {
       override def compareAndNotify(
           hotel: Hotel.WithId,
           search: Search.WithId,
+          toAddress: String, //TODO put into database
           results: List[PriceFetcher.Results]): IO[Unit] = {
 
         def error(reason: String): IO[Unit] = {
@@ -45,39 +47,47 @@ object Comparer {
         lowestPriceInResults.fold[IO[Unit]](error("No price results found")) {
           result =>
             for {
-              maybePreviousResult <- resultsDB.lowestPriceFor(search.searchId,
-                                                              hotel.hotelId)
+              allTimeLowestPriceResult <- resultsDB.allTimeLowestPriceFor(
+                search.searchId,
+                hotel.hotelId)
+              mostRecentLowestPriceResult <- resultsDB.mostRecentLowestPriceFor(
+                search.searchId,
+                hotel.hotelId)
               resultRecord = Result(search.searchId,
                                     hotel.hotelId,
                                     result.priceDetails.price,
                                     result.comparisonSite.name)
-              _ <- maybePreviousResult.fold(IO.unit) { previousResult =>
+
+              _ <- mostRecentLowestPriceResult.fold(IO.unit) { previousResult =>
+                val priceNotification = PriceNotification(
+                  s"Price Drop Notification: ${hotel.name}",
+                  toAddress,
+                  hotel.name,
+                  previousResult.lowestPrice,
+                  result.priceDetails.price,
+                  result.priceDetails.seller,
+                  result.comparisonSite.name,
+                  result.priceDetails.url,
+                  allTimeLowestPriceResult.map(_.lowestPrice)
+                )
+
                 if (result.priceDetails.price < previousResult.lowestPrice) {
-                  val msg =
-                    s"Price for hotel ${hotel.name} dropping from £${previousResult.lowestPrice} to £${result.priceDetails.price} " +
-                      s"\nSeller: ${result.priceDetails.seller}" +
-                      s"\nFound on: ${result.comparisonSite.name}" +
-                      s"\nUrl: ${result.priceDetails.url.renderString}"
-                  logger.info(msg) >>
+
+                  logger.info(priceNotification.toText) >>
                     (if (config.emailOnPriceDecrease)
-                       notifier.priceNotify(msg, result.screenshot)
+                       notifier.priceNotify(priceNotification,
+                                            result.screenshot)
                      else IO.unit)
                 } else if (result.priceDetails.price > previousResult.lowestPrice) {
-                  val msg =
-                    s"Price for hotel ${hotel.name} increasing from £${previousResult.lowestPrice} to £${result.priceDetails.price} " +
-                      s"\nSeller: ${result.priceDetails.seller}" +
-                      s"\nFound on: ${result.comparisonSite.name}" +
-                      s"\nUrl: ${result.priceDetails.url.renderString}"
-                  logger.info(msg) >>
+                  logger.info(priceNotification.toText) >>
                     (if (config.emailOnPriceIncrease)
-                       notifier.priceNotify(msg, result.screenshot)
+                       notifier.priceNotify(priceNotification,
+                                            result.screenshot)
                      else IO.unit)
                 } else {
-                  val msg =
-                    s"Price for hotel ${hotel.name} staying the same at £${result.priceDetails.price}"
                   (if (config.emailOnPriceNoChange)
-                     notifier.priceNotify(msg, result.screenshot)
-                   else IO.unit) >> logger.info(msg)
+                     notifier.priceNotify(priceNotification, result.screenshot)
+                   else IO.unit) >> logger.info(priceNotification.toText)
                 }
               }
               _ <- resultsDB.persistResult(resultRecord)
