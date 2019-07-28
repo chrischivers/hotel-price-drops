@@ -26,7 +26,7 @@ case class PriceNotification(subject: String,
       s"dropping from £${previousLowestPrice} to £${currentLowestPrice}"
     else if (previousLowestPrice < currentLowestPrice)
       s"increasing from £${previousLowestPrice} to £${currentLowestPrice}"
-    else "staying the same"
+    else s"staying the same at £${currentLowestPrice}"
 
   def toText =
     s"Price for hotel ${hotelName} $priceMovementDesc " +
