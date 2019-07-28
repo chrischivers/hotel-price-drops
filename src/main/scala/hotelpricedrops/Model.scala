@@ -1,11 +1,10 @@
 package hotelpricedrops
 
-import cats.effect.IO
+import java.time.{Instant, LocalDate}
+
+import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import org.http4s.Uri
-import io.circe.generic.semiauto._
-import org.openqa.selenium.remote.RemoteWebDriver
-import scala.collection.JavaConverters._
 
 object Model {
 
@@ -35,12 +34,55 @@ object Model {
   }
 
   object Hotel {
+
+    case class WithId(hotelId: Int,
+                      name: String,
+                      kayakUrl: Option[Uri],
+                      skyscannerUrl: Option[Uri]) {
+      def withoutid = Hotel(name, kayakUrl, skyscannerUrl)
+    }
+
     implicit val uriDecoder: Decoder[Uri] =
       Decoder.decodeString.map(Uri.unsafeFromString)
     implicit val uriEncoder: Encoder[Uri] =
       Encoder.encodeString.contramap[Uri](_.renderString)
     implicit val decoder: Decoder[Hotel] = deriveDecoder
     implicit val encoder: Encoder[Hotel] = deriveEncoder
+  }
+
+  case class Search(checkInDate: LocalDate,
+                    checkOutDate: LocalDate,
+                    numberOfAdults: Int)
+
+  object Search {
+    case class WithId(searchId: Int,
+                      checkInDate: LocalDate,
+                      checkOutDate: LocalDate,
+                      numberOfAdults: Int) {
+      def withoutId = Search(checkInDate, checkOutDate, numberOfAdults)
+    }
+
+    import io.circe.java8.time.decodeLocalDate
+    import io.circe.java8.time.encodeLocalDate
+    implicit val decoder: Decoder[Search] = deriveDecoder
+    implicit val encoder: Encoder[Search] = deriveEncoder
+  }
+
+  case class Result(searchId: Int,
+                    hotelId: Int,
+                    lowestPrice: Int,
+                    comparisonSiteName: String)
+
+  object Result {
+    case class WithIdAndTimestamp(resultId: Int,
+                                  searchId: Int,
+                                  hotelId: Int,
+                                  lowestPrice: Int,
+                                  comparisonSiteName: String,
+                                  timestamp: Instant) {
+      def withoutIdAndTimestamp =
+        Result(searchId, hotelId, lowestPrice, comparisonSiteName)
+    }
   }
 
 }

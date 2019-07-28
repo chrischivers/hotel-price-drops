@@ -1,9 +1,9 @@
 version: '2'
 services:
 
-  redis:
-    image: redis:3.2-alpine
-    command: ["redis-server"]
-    hostname: redis
+  postgres:
+    image: postgres:10.4
     ports:
-      - 6379:6379
+      - 5432:5432
+    environment:
+      POSTGRES_DB: hpd

@@ -13,6 +13,13 @@ object WebDriver {
     })(driver => IO(driver.close()))
   }
 
-  def apply(headless: Boolean = false) = firefoxDriverResource(headless)
+  def apply(geckoDriverPath: String, headless: Boolean = false) = {
+    for {
+      _ <- Resource.liftF(
+        IO(System.setProperty("webdriver.gecko.driver", geckoDriverPath)))
+      firefoxDriver <- firefoxDriverResource(headless)
+
+    } yield firefoxDriver
+  }
 
 }

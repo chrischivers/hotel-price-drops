@@ -26,7 +26,8 @@ object EmailNotifier {
                            smtpUsername: String,
                            smtpPassword: String)
 
-  def apply(emailerConfig: EmailerConfig)(implicit logger: Logger[IO]) = IO {
+  def apply(emailerConfig: EmailerConfig)(
+      implicit logger: Logger[IO]): Notifier = {
     new Notifier {
 
       val properties = new Properties()
