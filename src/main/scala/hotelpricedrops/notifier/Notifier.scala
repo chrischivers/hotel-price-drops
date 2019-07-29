@@ -11,8 +11,7 @@ trait Notifier {
   def errorNotify(errorMsg: ErrorString, screenshot: Screenshot): IO[Unit]
 }
 
-case class PriceNotification(subject: String,
-                             to: String,
+case class PriceNotification(to: String,
                              hotelName: String,
                              previousLowestPrice: Int,
                              currentLowestPrice: Int,
@@ -27,6 +26,8 @@ case class PriceNotification(subject: String,
     else if (previousLowestPrice < currentLowestPrice)
       s"increasing from £${previousLowestPrice} to £${currentLowestPrice}"
     else s"staying the same at £${currentLowestPrice}"
+
+  def subject = s"Price Notification: ${hotelName} $priceMovementDesc"
 
   def toText =
     s"Price for hotel ${hotelName} $priceMovementDesc " +

@@ -38,7 +38,7 @@ object Comparer {
             case ReportedRateType.Entirety =>
               result.copy(
                 priceDetails = result.priceDetails.copy(
-                  price = result.priceDetails.price / 7)) //todo handle number of nights somewhere
+                  price = result.priceDetails.price / search.withoutId.numberOfNights))
           }
         }
         val lowestPriceInResults =
@@ -60,7 +60,6 @@ object Comparer {
 
               _ <- mostRecentLowestPriceResult.fold(IO.unit) { previousResult =>
                 val priceNotification = PriceNotification(
-                  s"Price Drop Notification: ${hotel.name}",
                   user.emailAddress,
                   hotel.name,
                   previousResult.lowestPrice,
