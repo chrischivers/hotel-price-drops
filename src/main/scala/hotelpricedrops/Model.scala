@@ -85,4 +85,11 @@ object Model {
     }
   }
 
+  case class User(emailAddress: String, searchId: Int)
+
+  object User {
+    implicit val decoder: Decoder[User] = deriveDecoder
+    implicit val encoder: Encoder[User] = deriveEncoder
+  }
+
 }

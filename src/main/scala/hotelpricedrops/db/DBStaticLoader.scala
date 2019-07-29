@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.syntax.traverse._
 import cats.syntax.functor._
 import cats.instances.list._
-import hotelpricedrops.Model.{Hotel, Search}
+import hotelpricedrops.Model.{Hotel, Search, User}
 import io.circe.Decoder
 import io.circe.parser.parse
 
@@ -14,6 +14,7 @@ object DBStaticLoader {
 
   private val hotelsFileName = "hotel-list.json"
   private val searchesFileName = "searches-list.json"
+  private val userFileName = "user-list.json"
 
   private def getFromFile[T](fileName: String)(
       implicit decoder: Decoder[T]): IO[List[T]] = {
@@ -53,7 +54,20 @@ object DBStaticLoader {
 
       })
       .void
+  }
 
+  def populateUsers(usersDB: UsersDB): IO[Unit] = {
+
+    getFromFile[User](userFileName)
+      .flatMap(_.traverse { user =>
+        for {
+          existing <- usersDB.usersFor(user.emailAddress, user.searchId)
+          _ <- if (existing.nonEmpty) IO.unit
+          else usersDB.persistUser(user)
+        } yield ()
+
+      })
+      .void
   }
 
 }

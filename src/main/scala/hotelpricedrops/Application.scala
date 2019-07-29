@@ -6,8 +6,14 @@ import cats.effect.{IO, Timer}
 import cats.syntax.traverse._
 import cats.instances.list._
 import doobie.hikari.HikariTransactor
-import hotelpricedrops.Model.Search
-import hotelpricedrops.db.{DBStaticLoader, HotelsDB, ResultsDB, SearchesDB}
+import hotelpricedrops.Model.{Search, User}
+import hotelpricedrops.db.{
+  DBStaticLoader,
+  HotelsDB,
+  ResultsDB,
+  SearchesDB,
+  UsersDB
+}
 import hotelpricedrops.notifier.EmailNotifier
 import hotelpricedrops.pricefetchers.PriceFetcher
 import io.chrisdavenport.log4cats.Logger
@@ -25,6 +31,7 @@ object Application {
     val hotelsDb = HotelsDB(resources.db)
     val searchesDb = SearchesDB(resources.db)
     val resultsDb = ResultsDB(resources.db)
+    val usersDb = UsersDB(resources.db)
 
     val notifier = EmailNotifier(resources.config.emailerConfig)
 
@@ -45,31 +52,30 @@ object Application {
       _ <- logger.info(s"Starting run at ${Instant.now().toString}")
       _ <- DBStaticLoader.populateHotels(hotelsDb)
       _ <- DBStaticLoader.populateSearches(searchesDb)
+      _ <- DBStaticLoader.populateUsers(usersDb)
       searches <- searchesDb.allSearches
       - <- searches.traverse { search =>
-        processSearch(
-          search,
-          hotelsDb,
-          priceFetchers,
-          comparer,
-          resources.config.emailerConfig.errorSentTo) //TODO set email address properly from DB
+        usersDb.usersFor(search.searchId).flatMap { users =>
+          users.traverse { user =>
+            processSearch(search, user, hotelsDb, priceFetchers, comparer)
+          }
+        }
       }
       _ <- logger.info(s"Finished run at ${Instant.now().toString}")
     } yield ()
   }
 
-  def processSearch(
-      search: Search.WithId,
-      hotelsDB: HotelsDB,
-      priceFetchers: List[PriceFetcher],
-      comparer: Comparer,
-      toAddress: String)(implicit logger: Logger[IO]) = { //TODO put to address into db
+  def processSearch(search: Search.WithId,
+                    user: User,
+                    hotelsDB: HotelsDB,
+                    priceFetchers: List[PriceFetcher],
+                    comparer: Comparer)(implicit logger: Logger[IO]) = {
     for {
       allHotels <- hotelsDB.allHotels
       _ <- allHotels.traverse { hotel =>
         Hotels.pricesForHotel(hotel.withoutid, priceFetchers).flatMap {
           results =>
-            comparer.compareAndNotify(hotel, search, toAddress, results)
+            comparer.compareAndNotify(hotel, search, user, results)
         }
       }
     } yield ()

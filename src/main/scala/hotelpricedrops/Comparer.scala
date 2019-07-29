@@ -3,7 +3,7 @@ package hotelpricedrops
 import cats.effect.IO
 import cats.syntax.flatMap._
 import hotelpricedrops.Config._
-import hotelpricedrops.Model.{Hotel, ReportedRateType, Result, Search}
+import hotelpricedrops.Model.{Hotel, ReportedRateType, Result, Search, User}
 import hotelpricedrops.db.ResultsDB
 import hotelpricedrops.notifier.{Notifier, PriceNotification}
 import hotelpricedrops.pricefetchers.PriceFetcher
@@ -12,7 +12,7 @@ import io.chrisdavenport.log4cats.Logger
 trait Comparer {
   def compareAndNotify(hotel: Hotel.WithId,
                        search: Search.WithId,
-                       toAddress: String, //TODO put into database
+                       user: User,
                        results: List[PriceFetcher.Results]): IO[Unit]
 }
 
@@ -24,7 +24,7 @@ object Comparer {
       override def compareAndNotify(
           hotel: Hotel.WithId,
           search: Search.WithId,
-          toAddress: String, //TODO put into database
+          user: User,
           results: List[PriceFetcher.Results]): IO[Unit] = {
 
         def error(reason: String): IO[Unit] = {
@@ -61,7 +61,7 @@ object Comparer {
               _ <- mostRecentLowestPriceResult.fold(IO.unit) { previousResult =>
                 val priceNotification = PriceNotification(
                   s"Price Drop Notification: ${hotel.name}",
-                  toAddress,
+                  user.emailAddress,
                   hotel.name,
                   previousResult.lowestPrice,
                   result.priceDetails.price,
