@@ -36,3 +36,4 @@ application.conf
 hotel-list.json
 searches-list.json
 user-list.json
+*.json
