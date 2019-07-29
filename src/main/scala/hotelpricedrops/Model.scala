@@ -1,7 +1,7 @@
 package hotelpricedrops
 
 import java.time.{Instant, LocalDate}
-
+import java.time.temporal.ChronoUnit.DAYS
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import org.http4s.Uri
@@ -52,7 +52,9 @@ object Model {
 
   case class Search(checkInDate: LocalDate,
                     checkOutDate: LocalDate,
-                    numberOfAdults: Int)
+                    numberOfAdults: Int) {
+    def numberOfNights = DAYS.between(checkInDate, checkOutDate).toInt
+  }
 
   object Search {
     case class WithId(searchId: Int,

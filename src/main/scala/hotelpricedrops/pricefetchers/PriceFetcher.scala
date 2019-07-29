@@ -22,8 +22,8 @@ trait PriceFetcher {
 
   def comparisonSite: ComparisonSite
 
-  def getPriceDetailsFor(hotel: Hotel): IO[Option[PriceFetcher.Results]]
-
+  def getPriceDetailsFor(hotel: Hotel,
+                         nights: Int): IO[Option[PriceFetcher.Results]]
 }
 
 object PriceFetcher {
@@ -39,7 +39,7 @@ object PriceFetcher {
             screenshotOnError: Boolean,
             notifyOnError: (ErrorString, Screenshot) => IO[Unit])(
       implicit timer: Timer[IO],
-      logger: Logger[IO]) = new PriceFetcher {
+      logger: Logger[IO]): PriceFetcher = new PriceFetcher {
 
     override def comparisonSite: ComparisonSite = site
 
@@ -47,7 +47,8 @@ object PriceFetcher {
     val timeBetweenLoadReadyAttempts: FiniteDuration = 5.seconds
 
     override def getPriceDetailsFor(
-        hotel: Hotel): IO[Option[pricefetchers.PriceFetcher.Results]] = {
+        hotel: Hotel,
+        nights: Int): IO[Option[pricefetchers.PriceFetcher.Results]] = {
 
       hotel
         .urlFor(comparisonSite)
@@ -61,7 +62,7 @@ object PriceFetcher {
             nightlyPrice = comparisonSite.reportedRateType match {
               case ReportedRateType.Nightly => priceDetails.price
               case ReportedRateType.Entirety =>
-                priceDetails.price / 7 //todo fix
+                priceDetails.price / nights
             }
             _ <- logger.info(
               s"Found nightly price of £$nightlyPrice on ${comparisonSite.name} for hotel ${hotel.name} (on ${priceDetails.seller})")
@@ -80,21 +81,6 @@ object PriceFetcher {
              } else IO.unit) >> IO.raiseError(err)
           }
         }
-    }
-
-    private def priceFromProviderElement(element: WebElement) = {
-      IO {
-        val id = element.getAttribute("id").trim
-        val price = if (id.nonEmpty) {
-          Some(
-            element
-              .findElement(By.className("price"))
-              .getText
-              .drop(1)
-              .toInt)
-        } else None
-        price.map((id, _))
-      }
     }
 
     private def waitToBeReady(remoteWebDriver: RemoteWebDriver)(

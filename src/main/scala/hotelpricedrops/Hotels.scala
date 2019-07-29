@@ -14,12 +14,14 @@ import cats.syntax.flatMap._
 
 object Hotels {
 
-  def pricesForHotel(hotel: Hotel, priceFetchers: List[PriceFetcher])(
+  def pricesForHotel(hotel: Hotel,
+                     priceFetchers: List[PriceFetcher],
+                     nights: Int)(
       implicit logger: Logger[IO]): IO[List[PriceFetcher.Results]] = {
     priceFetchers
       .traverse { fetcher =>
         fetcher
-          .getPriceDetailsFor(hotel)
+          .getPriceDetailsFor(hotel, nights)
           .withRetry(3)
           .handleErrorWith { err =>
             logger.error(

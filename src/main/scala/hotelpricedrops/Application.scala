@@ -73,10 +73,13 @@ object Application {
     for {
       allHotels <- hotelsDB.allHotels
       _ <- allHotels.traverse { hotel =>
-        Hotels.pricesForHotel(hotel.withoutid, priceFetchers).flatMap {
-          results =>
+        Hotels
+          .pricesForHotel(hotel.withoutid,
+                          priceFetchers,
+                          search.withoutId.numberOfNights)
+          .flatMap { results =>
             comparer.compareAndNotify(hotel, search, user, results)
-        }
+          }
       }
     } yield ()
   }
