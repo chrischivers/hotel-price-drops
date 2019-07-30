@@ -44,7 +44,11 @@ object Application {
         PriceFetcher(resources.webDriver,
                      ComparisonSite.SkyScanner,
                      resources.config.screenshotOnError,
-                     notifier.errorNotify)
+                     notifier.errorNotify),
+        PriceFetcher(resources.webDriver,
+          ComparisonSite.Trivago,
+          resources.config.screenshotOnError,
+          notifier.errorNotify)
       )
     val comparer = Comparer(resultsDb, notifier, resources.config)
 

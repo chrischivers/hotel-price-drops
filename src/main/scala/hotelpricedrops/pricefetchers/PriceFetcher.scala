@@ -103,7 +103,7 @@ object PriceFetcher {
                 new RuntimeException("Wait condition not satisfied"))
           }
       logger
-        .info(s"Waiting for page to load (max wait time $maxLoadWaitTime)") >> helper
+        .info(s"Waiting for page to load (max wait time $maxLoadWaitTime)") >> helper >> IO.sleep(3.seconds)
     }
   }
 }

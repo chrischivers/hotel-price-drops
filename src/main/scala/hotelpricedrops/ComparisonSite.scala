@@ -91,7 +91,38 @@ object ComparisonSite {
 
           PriceDetails("Unknown", price, Uri.unsafeFromString(d.getCurrentUrl))
       }
+  }
 
+  case object Trivago extends ComparisonSite {
+    override def name: String = "Trivago"
+
+    override def reportedRateType: ReportedRateType = ReportedRateType.Nightly
+
+    override def waitToBeReadyCondition: RemoteWebDriver => IO[Boolean] =
+      d =>
+        IO(
+          d.findElementsByClassName("item__best-price")
+            .asScala
+            .toList
+            .exists(_.getText.headOption.contains('£')))
+
+
+    override def getLowestPrice: RemoteWebDriver => IO[PriceDetails] =
+      d =>
+        IO {
+          val result = for {
+            topHotel <- d.findElements(By.xpath("//article[@data-qa='itemlist-element']")).asScala.headOption
+            mainPrice <-  topHotel.findElements(By.className("item__best-price")).asScala.headOption.map(_.getText)
+            mainPriceSeller <-  topHotel.findElements(By.className("item__deal-best-ota")).asScala.headOption.map(_.getText)
+            otherPrices = topHotel.findElements(By.className("deals__price")).asScala.toList.map(_.getText)
+            otherPricesSellers = topHotel.findElements(By.className("deal-other__advertiser")).asScala.toList.map(_.getText)
+          } yield {
+            val sellersAndPrices = List((mainPriceSeller, mainPrice)) ++ otherPricesSellers.zip(otherPrices)
+            val (lowestSeller, lowestPrice) = sellersAndPrices.collect{case (seller, price) if price.headOption.contains('£') => (seller, price.drop(1).toInt)}.minBy{case (_, price) => price}
+            PriceDetails(lowestSeller, lowestPrice, Uri.unsafeFromString(d.getCurrentUrl))
+          }
+          result.get //todo make safe
+        }
   }
 
 }

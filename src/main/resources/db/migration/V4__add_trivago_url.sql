@@ -1,0 +1,2 @@
+ALTER TABLE hotels
+ADD COLUMN trivago_url VARCHAR NULL;

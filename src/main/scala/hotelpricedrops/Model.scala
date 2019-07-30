@@ -24,11 +24,13 @@ object Model {
 
   case class Hotel(name: String,
                    kayakUrl: Option[Uri],
-                   skyscannerUrl: Option[Uri]) {
+                   skyscannerUrl: Option[Uri],
+                   trivagoUrl: Option[Uri]) {
     def urlFor(comparisonSite: ComparisonSite) = {
       comparisonSite match {
         case ComparisonSite.Kayak      => kayakUrl
         case ComparisonSite.SkyScanner => skyscannerUrl
+        case ComparisonSite.Trivago    => trivagoUrl
       }
     }
   }
@@ -38,8 +40,9 @@ object Model {
     case class WithId(hotelId: Int,
                       name: String,
                       kayakUrl: Option[Uri],
-                      skyscannerUrl: Option[Uri]) {
-      def withoutid = Hotel(name, kayakUrl, skyscannerUrl)
+                      skyscannerUrl: Option[Uri],
+                      trivagoUrl: Option[Uri]) {
+      def withoutid = Hotel(name, kayakUrl, skyscannerUrl, trivagoUrl)
     }
 
     implicit val uriDecoder: Decoder[Uri] =

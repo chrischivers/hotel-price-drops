@@ -16,8 +16,9 @@ object DBStaticLoader {
   private val searchesFileName = "searches-list.json"
   private val userFileName = "user-list.json"
 
-  private def getFromFile[T](fileName: String)(
-      implicit decoder: Decoder[T]): IO[List[T]] = {
+  private def getFromFile[T](
+    fileName: String
+  )(implicit decoder: Decoder[T]): IO[List[T]] = {
     IO.fromEither {
       val rawJson = Source
         .fromResource(fileName)
@@ -48,10 +49,10 @@ object DBStaticLoader {
       .flatMap(_.traverse { hotel =>
         for {
           existing <- hotelsDB.hotelByName(hotel.name)
-          _ <- if (existing.isDefined) IO.unit
-          else hotelsDB.persistHotel(hotel)
+          _ <- existing.fold(hotelsDB.persistHotel(hotel))(
+            e => hotelsDB.updateHotel(e.hotelId, hotel)
+          )
         } yield ()
-
       })
       .void
   }
