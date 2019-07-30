@@ -59,6 +59,7 @@ object PriceFetcher {
             _ <- IO(driver.get(url.renderString)).withRetry(3)
             _ <- waitToBeReady(driver)()
             priceDetails <- comparisonSite.getLowestPrice(driver)
+            _ <- logger.info(s"lowest price retried from ${comparisonSite.name} for ${hotel.name} is ${priceDetails.price}")
             nightlyPrice = comparisonSite.reportedRateType match {
               case ReportedRateType.Nightly => priceDetails.price
               case ReportedRateType.Entirety =>
