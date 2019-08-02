@@ -24,9 +24,9 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.4",
   "com.iheart" %% "ficus" % "1.4.7",
   "org.scalatest" %% "scalatest" % "3.0.8" % Test,
-  "org.tpolecat"               %% "doobie-core"             % doobieVersion,
-  "org.tpolecat"               %% "doobie-hikari"           % doobieVersion,
-  "org.tpolecat"               %% "doobie-postgres"         % doobieVersion,
-  "org.flywaydb"               % "flyway-core"              % "4.2.0"
-
+  "org.tpolecat" %% "doobie-core" % doobieVersion,
+  "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+  "org.flywaydb" % "flyway-core" % "4.2.0",
+  "com.github.wookietreiber" %% "scala-chart" % "0.5.1"
 )

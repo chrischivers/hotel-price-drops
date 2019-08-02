@@ -3,9 +3,9 @@ package hotelpricedrops.db
 import cats.effect.IO
 import cats.syntax.functor._
 import doobie.hikari.HikariTransactor
-import hotelpricedrops.Model
-import hotelpricedrops.Model.{Hotel, Search}
 import doobie.implicits._
+import hotelpricedrops.Model
+import hotelpricedrops.Model.Search
 
 trait SearchesDB {
   def persistSearch(search: Search): IO[Unit]

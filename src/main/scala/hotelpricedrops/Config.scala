@@ -1,6 +1,5 @@
 package hotelpricedrops
 
-import cats.effect.IO
 import com.typesafe.config.ConfigFactory
 import hotelpricedrops.db.DB
 import hotelpricedrops.notifier.EmailNotifier.EmailerConfig

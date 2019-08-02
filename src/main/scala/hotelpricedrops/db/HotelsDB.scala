@@ -3,10 +3,9 @@ package hotelpricedrops.db
 import cats.effect.IO
 import cats.syntax.functor._
 import doobie.hikari.HikariTransactor
-import hotelpricedrops.Model.{Hotel, Search}
 import doobie.implicits._
 import doobie.util.Meta
-import hotelpricedrops.Model
+import hotelpricedrops.Model.Hotel
 import org.http4s.Uri
 
 trait HotelsDB {

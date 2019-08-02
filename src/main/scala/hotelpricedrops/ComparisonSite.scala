@@ -1,20 +1,17 @@
 package hotelpricedrops
 
+import cats.data.OptionT
 import cats.effect.IO
-import cats.syntax.traverse._
 import cats.instances.list._
+import cats.syntax.traverse._
 import hotelpricedrops.Model.{PriceDetails, ReportedRateType}
-import org.http4s.Uri
-import org.openqa.selenium.{By, WebElement}
-import org.openqa.selenium.remote.RemoteWebDriver
-
-import scala.collection.JavaConverters._
+import hotelpricedrops.selenium.{WebDriver, WebElement}
 
 sealed trait ComparisonSite {
   def name: String
   def reportedRateType: ReportedRateType
-  def waitToBeReadyCondition: RemoteWebDriver => IO[Boolean]
-  def getLowestPrice: RemoteWebDriver => IO[PriceDetails]
+  def waitToBeReadyCondition: WebDriver => IO[Boolean]
+  def getLowestPrice: WebDriver => IO[PriceDetails]
 }
 
 object ComparisonSite {
@@ -24,19 +21,17 @@ object ComparisonSite {
 
     override def reportedRateType: ReportedRateType = ReportedRateType.Nightly
 
-    override def waitToBeReadyCondition: RemoteWebDriver => IO[Boolean] =
+    override def waitToBeReadyCondition: WebDriver => IO[Boolean] =
       d =>
-        IO(
-          d.findElementsByClassName("price")
-            .asScala
-            .toList
-            .exists(_.getText.headOption.contains('£')))
+        for {
+          priceElems <- d.findElementsByClassName("price")
+          prices <- priceElems.traverse(_.text)
+        } yield prices.exists(_.headOption.contains('£'))
 
-    override def getLowestPrice: RemoteWebDriver => IO[PriceDetails] =
+    override def getLowestPrice: WebDriver => IO[PriceDetails] =
       driver =>
         for {
-          elements <- IO(
-            driver.findElementsByClassName("provider").asScala.toList)
+          elements <- driver.findElementsByClassName("provider")
           sellerPriceList <- elements
             .traverse(priceFromProviderElement)
             .map(_.flatten)
@@ -44,52 +39,54 @@ object ComparisonSite {
             .minBy { //todo unsafe
               case (_, price) => price
             }
-        } yield
-          PriceDetails(lowestPriceSeller,
-                       lowestPrice,
-                       Uri.unsafeFromString(driver.getCurrentUrl))
+          currentUrl <- driver.getCurrentUrl
+        } yield PriceDetails(lowestPriceSeller, lowestPrice, currentUrl)
 
-    private def priceFromProviderElement(element: WebElement) = IO {
-      val seller = element.getAttribute("id").trim
-      val price = if (seller.nonEmpty) {
-        Some(
+    private def priceFromProviderElement(
+      element: WebElement
+    ): IO[Option[(String, Int)]] = {
+
+      for {
+        seller <- element.getAttribute("id").map(_.trim)
+        price <- if (seller.nonEmpty) {
           element
-            .findElement(By.className("price"))
-            .getText
-            .drop(1)
-            .toInt)
-      } else None
-      price.map((seller, _))
+            .findElementByClassName("price")
+            .flatMap(_.text)
+            .flatMap(str => IO(Some(str.drop(1).toInt)))
+        } else IO(None)
+
+      } yield price.map((seller, _))
     }
   }
 
   case object SkyScanner extends ComparisonSite {
     override def name: String = "SkyScanner"
 
-    override def reportedRateType: ReportedRateType = ReportedRateType.Entirety
+    override def reportedRateType: ReportedRateType =
+      ReportedRateType.Entirety
 
-    override def waitToBeReadyCondition: RemoteWebDriver => IO[Boolean] =
+    override def waitToBeReadyCondition: WebDriver => IO[Boolean] =
       d =>
-        IO {
-          d.findElements(By.xpath("//span[@data-test-id='main-cta-price']"))
-            .asScala
-            .toList
-            .exists(_.getText.headOption.contains('£'))
-      }
+        for {
+          elems <- d.findElementsByXPath(
+            "//span[@data-test-id='main-cta-price']"
+          )
+          elemsText <- elems.traverse(_.text)
+        } yield elemsText.exists(_.headOption.contains('£'))
 
-    override def getLowestPrice: RemoteWebDriver => IO[PriceDetails] =
-      d =>
-        IO {
-          val price: Int = d
-            .findElements(By.xpath("//span[@data-test-id='main-cta-price']"))
-            .asScala
-            .toList
-            .map(_.getText)
-            .filter(_.headOption.contains('£'))
-            .map(_.drop(1).toInt)
-            .min //todo unsafe
+    override def getLowestPrice: WebDriver => IO[PriceDetails] =
+      d => {
 
-          PriceDetails("Unknown", price, Uri.unsafeFromString(d.getCurrentUrl))
+        for {
+          elemsByXPath <- d.findElementsByXPath(
+            "//span[@data-test-id='main-cta-price']"
+          )
+          elemsText <- elemsByXPath.traverse(_.text)
+          filteredText = elemsText.filter(_.headOption.contains('£'))
+          trimmedPrices <- filteredText.traverse(str => IO(str.drop(1).toInt))
+          lowestPrice <- IO(trimmedPrices.min)
+          url <- d.getCurrentUrl
+        } yield PriceDetails("Unknown", lowestPrice, url)
       }
   }
 
@@ -98,31 +95,66 @@ object ComparisonSite {
 
     override def reportedRateType: ReportedRateType = ReportedRateType.Nightly
 
-    override def waitToBeReadyCondition: RemoteWebDriver => IO[Boolean] =
+    override def waitToBeReadyCondition: WebDriver => IO[Boolean] =
       d =>
-        IO(
-          d.findElementsByClassName("item__best-price")
-            .asScala
-            .toList
-            .exists(_.getText.headOption.contains('£')))
+        for {
+          elems <- d.findElementsByClassName("item__best-price")
+          elemsText <- elems.traverse(_.text)
+        } yield elemsText.exists(_.headOption.contains('£'))
 
+    override def getLowestPrice: WebDriver => IO[PriceDetails] =
+      d => {
+        val result = for {
+          topHotel <- OptionT(
+            d.findElementsByXPath("//article[@data-qa='itemlist-element']")
+              .map(_.headOption)
+          )
+          mainPriceElem <- OptionT(
+            topHotel
+              .findElementsByClassName("item__best-price")
+              .map(_.headOption)
+          )
+          mainPriceElemText <- OptionT.liftF(mainPriceElem.text)
+          mainPriceSellerElem <- OptionT(
+            topHotel
+              .findElementsByClassName("item__deal-best-ota")
+              .map(_.headOption)
+          )
+          mainPriceSellerElemText <- OptionT.liftF(mainPriceSellerElem.text)
+          otherPricesElems <- OptionT.liftF(
+            topHotel
+              .findElementsByClassName("deals__price")
+          )
+          otherPricesElemsText <- OptionT.liftF(
+            otherPricesElems.traverse(_.text)
+          )
+          otherPricesSellersElems <- OptionT.liftF(
+            topHotel
+              .findElementsByClassName("deal-other__advertiser")
+          )
+          otherPricesSellersElemsText <- OptionT.liftF(
+            otherPricesSellersElems.traverse(_.text)
+          )
+          currentUrl <- OptionT.liftF(d.getCurrentUrl)
 
-    override def getLowestPrice: RemoteWebDriver => IO[PriceDetails] =
-      d =>
-        IO {
-          val result = for {
-            topHotel <- d.findElements(By.xpath("//article[@data-qa='itemlist-element']")).asScala.headOption
-            mainPrice <-  topHotel.findElements(By.className("item__best-price")).asScala.headOption.map(_.getText)
-            mainPriceSeller <-  topHotel.findElements(By.className("item__deal-best-ota")).asScala.headOption.map(_.getText)
-            otherPrices = topHotel.findElements(By.className("deals__price")).asScala.toList.map(_.getText)
-            otherPricesSellers = topHotel.findElements(By.className("deal-other__advertiser")).asScala.toList.map(_.getText)
-          } yield {
-            val sellersAndPrices = List((mainPriceSeller, mainPrice)) ++ otherPricesSellers.zip(otherPrices)
-            val (lowestSeller, lowestPrice) = sellersAndPrices.collect{case (seller, price) if price.headOption.contains('£') => (seller, price.drop(1).toInt)}.minBy{case (_, price) => price}
-            PriceDetails(lowestSeller, lowestPrice, Uri.unsafeFromString(d.getCurrentUrl))
-          }
-          result.get //todo make safe
+        } yield {
+          val sellersAndPrices = List(
+            (mainPriceSellerElemText, mainPriceElemText)
+          ) ++ otherPricesSellersElemsText
+            .zip(otherPricesElemsText)
+          val (lowestSeller, lowestPrice) = sellersAndPrices
+            .collect {
+              case (seller, price) if price.headOption.contains('£') =>
+                (seller, price.drop(1).toInt)
+            }
+            .minBy { case (_, price) => price }
+          PriceDetails(lowestSeller, lowestPrice, currentUrl)
         }
+        result.value.flatMap {
+          case Some(result) => IO.pure(result)
+          case None =>
+            IO.raiseError(new RuntimeException("Unable to obtain lowest price"))
+        }
+      }
   }
-
 }

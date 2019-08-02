@@ -1,8 +1,8 @@
 package hotelpricedrops.db
 
-import cats.effect.{ContextShift, IO}
-import doobie.util.ExecutionContexts
+import cats.effect.ContextShift
 import cats.syntax.functor._
+import doobie.util.ExecutionContexts
 
 object DB {
 
@@ -20,26 +20,29 @@ object DB {
   import org.flywaydb.core.Flyway
 
   def transactorResource(config: Config)(
-      implicit contextShift: ContextShift[IO])
-    : Resource[IO, HikariTransactor[IO]] =
+    implicit contextShift: ContextShift[IO]
+  ): Resource[IO, HikariTransactor[IO]] =
     for {
       connectEC <- ExecutionContexts.fixedThreadPool[IO](32) // connect EC
       transactEC <- ExecutionContexts.cachedThreadPool[IO] // transaction EC
       url <- Resource.liftF(config.driver match {
         case "org.postgresql.Driver" =>
           IO(
-            s"jdbc:postgresql://${config.host}:${config.port}/${config.dbName}")
+            s"jdbc:postgresql://${config.host}:${config.port}/${config.dbName}"
+          )
         case other =>
           IO.raiseError(
-            new RuntimeException(s"Unsupported database driver $other"))
+            new RuntimeException(s"Unsupported database driver $other")
+          )
       })
-      transactor <- newHikariTransactor[IO](config.driver,
-                                            url,
-                                            config.user,
-                                            config.password,
-                                            connectEC,
-                                            transactEC)
-        .evalMap { tx =>
+      transactor <- newHikariTransactor[IO](
+        config.driver,
+        url,
+        config.user,
+        config.password,
+        connectEC,
+        transactEC
+      ).evalMap { tx =>
           tx.configure { dataSource =>
               IO {
                 dataSource.setMaximumPoolSize(config.maximumPoolSize)

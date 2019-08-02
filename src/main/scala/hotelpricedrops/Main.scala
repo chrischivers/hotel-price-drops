@@ -5,6 +5,7 @@ import java.util.concurrent.Executors
 import cats.effect._
 import hotelpricedrops.Application.Resources
 import hotelpricedrops.db.DB
+import hotelpricedrops.selenium.WebDriver
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 
@@ -12,17 +13,18 @@ import scala.concurrent.ExecutionContext
 
 object Main extends IOApp.WithContext {
 
+  implicit val logger: SelfAwareStructuredLogger[IO] =
+    Slf4jLogger.getLogger[IO]
+
   override protected def executionContextResource
     : Resource[SyncIO, ExecutionContext] =
     Resource
-      .make(SyncIO(Executors.newFixedThreadPool(100)))(ec =>
-        SyncIO(ec.shutdown()))
+      .make(SyncIO(Executors.newFixedThreadPool(100)))(
+        ec => SyncIO(ec.shutdown())
+      )
       .map(ExecutionContext.fromExecutor(_))
 
   override def run(args: List[String]): IO[ExitCode] = {
-
-    implicit val logger: SelfAwareStructuredLogger[IO] =
-      Slf4jLogger.getLogger[IO]
 
     val config = Config()
 

@@ -16,12 +16,12 @@ import hotelpricedrops.db.{
 }
 import hotelpricedrops.notifier.EmailNotifier
 import hotelpricedrops.pricefetchers.PriceFetcher
+import hotelpricedrops.selenium.WebDriver
 import io.chrisdavenport.log4cats.Logger
-import org.openqa.selenium.remote.RemoteWebDriver
 
 object Application {
 
-  case class Resources(webDriver: RemoteWebDriver,
+  case class Resources(webDriver: WebDriver,
                        db: HikariTransactor[IO],
                        config: Config.Config)
 
@@ -37,18 +37,24 @@ object Application {
 
     val priceFetchers =
       List(
-        PriceFetcher(resources.webDriver,
-                     ComparisonSite.Kayak,
-                     resources.config.screenshotOnError,
-                     notifier.errorNotify),
-        PriceFetcher(resources.webDriver,
-                     ComparisonSite.SkyScanner,
-                     resources.config.screenshotOnError,
-                     notifier.errorNotify),
-        PriceFetcher(resources.webDriver,
+        PriceFetcher(
+          resources.webDriver,
+          ComparisonSite.Kayak,
+          resources.config.screenshotOnError,
+          notifier.errorNotify
+        ),
+        PriceFetcher(
+          resources.webDriver,
+          ComparisonSite.SkyScanner,
+          resources.config.screenshotOnError,
+          notifier.errorNotify
+        ),
+        PriceFetcher(
+          resources.webDriver,
           ComparisonSite.Trivago,
           resources.config.screenshotOnError,
-          notifier.errorNotify)
+          notifier.errorNotify
+        )
       )
     val comparer = Comparer(resultsDb, notifier, resources.config)
 
@@ -58,7 +64,7 @@ object Application {
       _ <- DBStaticLoader.populateSearches(searchesDb)
       _ <- DBStaticLoader.populateUsers(usersDb)
       searches <- searchesDb.allSearches
-      - <- searches.traverse { search =>
+      _ <- searches.traverse { search =>
         usersDb.usersFor(search.searchId).flatMap { users =>
           users.traverse { user =>
             processSearch(search, user, hotelsDb, priceFetchers, comparer)
@@ -78,9 +84,11 @@ object Application {
       allHotels <- hotelsDB.allHotels
       _ <- allHotels.traverse { hotel =>
         Hotels
-          .pricesForHotel(hotel.withoutid,
-                          priceFetchers,
-                          search.withoutId.numberOfNights)
+          .pricesForHotel(
+            hotel.withoutid,
+            priceFetchers,
+            search.withoutId.numberOfNights
+          )
           .flatMap { results =>
             comparer.compareAndNotify(hotel, search, user, results)
           }

@@ -1,21 +1,19 @@
 package hotelpricedrops.db
 
 import cats.effect.IO
-import hotelpricedrops.Model.{Result, Search}
-import cats.effect.IO
 import cats.syntax.functor._
 import doobie.hikari.HikariTransactor
-import hotelpricedrops.Model
-import hotelpricedrops.Model.{Hotel, Search}
 import doobie.implicits._
+import hotelpricedrops.Model.Result
 
 trait ResultsDB {
   def persistResult(result: Result): IO[Unit]
   def allTimeLowestPriceFor(searchId: Int,
                             hotelId: Int): IO[Option[Result.WithIdAndTimestamp]]
   def mostRecentLowestPriceFor(
-      searchId: Int,
-      hotelId: Int): IO[Option[Result.WithIdAndTimestamp]]
+    searchId: Int,
+    hotelId: Int
+  ): IO[Option[Result.WithIdAndTimestamp]]
 }
 
 object ResultsDB {
@@ -29,8 +27,9 @@ object ResultsDB {
     }
 
     override def allTimeLowestPriceFor(
-        searchId: Int,
-        hotelId: Int): IO[Option[Result.WithIdAndTimestamp]] = {
+      searchId: Int,
+      hotelId: Int
+    ): IO[Option[Result.WithIdAndTimestamp]] = {
       sql"""SELECT id, search_id, hotel_id, lowest_price, comparison_site_name, timestamp 
            |FROM results
            |WHERE search_id = ${searchId} AND hotel_id = ${hotelId}
@@ -43,8 +42,9 @@ object ResultsDB {
     }
 
     override def mostRecentLowestPriceFor(
-        searchId: Int,
-        hotelId: Int): IO[Option[Result.WithIdAndTimestamp]] = {
+      searchId: Int,
+      hotelId: Int
+    ): IO[Option[Result.WithIdAndTimestamp]] = {
       sql"""SELECT id, search_id, hotel_id, lowest_price, comparison_site_name, timestamp 
            |FROM results
            |WHERE search_id = ${searchId} AND hotel_id = ${hotelId}
