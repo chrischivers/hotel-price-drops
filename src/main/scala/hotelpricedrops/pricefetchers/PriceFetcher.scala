@@ -53,7 +53,7 @@ object PriceFetcher {
               _ <- logger.info(
                 s"Looking up prices for hotel ${hotel.name} on ${comparisonSite.name}"
               )
-              _ <- IO(driver.setUrl(url)).withRetry(3)
+              _ <- driver.setUrl(url).withRetry(3)
               _ <- waitToBeReady(driver)()
               priceDetails <- comparisonSite.getLowestPrice(driver)
               _ <- logger.info(
