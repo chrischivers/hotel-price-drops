@@ -3,6 +3,7 @@ package hotelpricedrops
 import com.typesafe.config.ConfigFactory
 import hotelpricedrops.db.DB
 import hotelpricedrops.notifier.EmailNotifier.EmailerConfig
+import hotelpricedrops.notifier.PriceNotification.PriceNotificationConfig
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
@@ -14,10 +15,7 @@ object Config {
                     dbConfig: DB.Config,
                     geckoDriverPath: String,
                     timeBetweenRuns: FiniteDuration,
-                    emailOnPriceDecrease: Boolean,
-                    emailOnPriceIncrease: Boolean,
-                    emailOnPriceNoChange: Boolean,
-                    screenshotOnError: Boolean)
+                    priceNotificationConfig: PriceNotificationConfig)
 
   //TODO put into effect
   def apply() = {
@@ -27,10 +25,23 @@ object Config {
       config.as[DB.Config]("dbConfig"),
       config.as[String]("geckoDriverPath"),
       config.as[FiniteDuration]("timeBetweenRuns"),
-      config.getAs[Boolean]("emailOnPriceDecrease").getOrElse(true),
-      config.getAs[Boolean]("emailOnPriceIncrease").getOrElse(false),
-      config.getAs[Boolean]("emailOnPriceNoChange").getOrElse(false),
-      config.getAs[Boolean]("screenshotOnError").getOrElse(false)
+      PriceNotificationConfig(
+        config
+          .getAs[Boolean]("priceNotification.emailOnAllPriceDecreases")
+          .getOrElse(false),
+        config
+          .getAs[Boolean]("priceNotification.emailOnAllPriceIncreases")
+          .getOrElse(false),
+        config
+          .getAs[Boolean]("priceNotification.emailOnPriceNoChange")
+          .getOrElse(false),
+        config
+          .getAs[Boolean]("priceNotification.emailOnLowestPriceSinceCreated")
+          .getOrElse(true),
+        config
+          .getAs[Boolean]("priceNotification.emailScreenshotOnError")
+          .getOrElse(false)
+      )
     )
   }
 }

@@ -96,7 +96,7 @@ object Model {
     }
   }
 
-  case class User(emailAddress: String, searchId: Int)
+  case class User(emailAddress: String, searchId: Int, startDate: Instant)
 
   object User {
     implicit val decoder: Decoder[User] = deriveDecoder

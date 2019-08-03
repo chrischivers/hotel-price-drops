@@ -20,6 +20,9 @@ case class PriceNotification(to: String,
                              url: Uri,
                              allTimeLowestPrice: Option[Int]) {
 
+  private def isAllTimeLowest: Boolean =
+    allTimeLowestPrice.exists(_ > currentLowestPrice)
+
   private def priceMovementDesc =
     if (previousLowestPrice > currentLowestPrice)
       s"dropping from £${previousLowestPrice} to £${currentLowestPrice}"
@@ -27,10 +30,12 @@ case class PriceNotification(to: String,
       s"increasing from £${previousLowestPrice} to £${currentLowestPrice}"
     else s"staying the same at £${currentLowestPrice}"
 
-  def subject = s"Price Notification: ${hotelName} $priceMovementDesc"
+  def subject =
+    s"${if (isAllTimeLowest) "** ALL TIME LOWEST PRICE **" else ""} Price Notification: ${hotelName} $priceMovementDesc"
 
   def toText =
-    s"Price for hotel ${hotelName} $priceMovementDesc " +
+    s"${if (isAllTimeLowest) "*ALL TIME LOWEST PRICE*" else ""}" +
+      s"\nPrice for hotel ${hotelName} $priceMovementDesc " +
       s"\nSeller: ${seller}" +
       s"\nFound on: ${comparisonSiteName}" +
       s"\nUrl: ${url}. " +
@@ -40,10 +45,21 @@ case class PriceNotification(to: String,
 
   def toHtml =
     s"""
+       |${if (isAllTimeLowest)
+         s"<p>*** ALl TIME LOWEST PRICE for hotel <strong>${hotelName}</strong></p> ***"
+       else ""}
        |<p>Price for hotel <strong>${hotelName}</strong> $priceMovementDesc </p>
        |<p>Seller: <strong>${seller} </strong></p>
        |<p>Found on: <strong>${comparisonSiteName} </strong>(<a href="${url}">url</a>)</p>
        |<p>All time lowest price was <strong>&pound;${allTimeLowestPrice
          .getOrElse("[Unknown]")}</strong></p>
        |""".stripMargin
+}
+
+object PriceNotification {
+  case class PriceNotificationConfig(emailOnAllPriceDecreases: Boolean,
+                                     emailOnAllPriceIncreases: Boolean,
+                                     emailOnPriceNoChange: Boolean,
+                                     emailOnLowestPriceSinceCreated: Boolean,
+                                     emailScreenshotOnError: Boolean)
 }

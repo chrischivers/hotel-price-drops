@@ -22,14 +22,14 @@ object UsersDB {
     }
 
     override def usersFor(searchId: Int): IO[List[User]] = {
-      sql"""SELECT email_address, search_id FROM users
+      sql"""SELECT email_address, search_id, start_date FROM users
            |WHERE search_id = $searchId
            |""".stripMargin.query[User].to[List].transact(transactor)
     }
 
     override def usersFor(emailAddress: String,
                           searchId: Int): IO[List[User]] = {
-      sql"""SELECT email_address, search_id FROM users
+      sql"""SELECT email_address, search_id, start_date FROM users
            |WHERE email_address = $emailAddress
            |AND search_id = $searchId
            |""".stripMargin.query[User].to[List].transact(transactor)

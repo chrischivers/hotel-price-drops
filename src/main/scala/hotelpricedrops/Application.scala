@@ -40,23 +40,24 @@ object Application {
         PriceFetcher(
           resources.webDriver,
           ComparisonSite.Kayak,
-          resources.config.screenshotOnError,
+          resources.config.priceNotificationConfig.emailScreenshotOnError,
           notifier.errorNotify
         ),
         PriceFetcher(
           resources.webDriver,
           ComparisonSite.SkyScanner,
-          resources.config.screenshotOnError,
+          resources.config.priceNotificationConfig.emailScreenshotOnError,
           notifier.errorNotify
         ),
         PriceFetcher(
           resources.webDriver,
           ComparisonSite.Trivago,
-          resources.config.screenshotOnError,
+          resources.config.priceNotificationConfig.emailScreenshotOnError,
           notifier.errorNotify
         )
       )
-    val comparer = Comparer(resultsDb, notifier, resources.config)
+    val comparer =
+      Comparer(resultsDb, notifier, resources.config.priceNotificationConfig)
 
     for {
       _ <- logger.info(s"Starting run at ${Instant.now().toString}")
