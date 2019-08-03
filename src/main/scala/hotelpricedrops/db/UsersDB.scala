@@ -15,8 +15,8 @@ object UsersDB {
   def apply(transactor: HikariTransactor[IO]): UsersDB = new UsersDB {
 
     override def persistUser(user: User): IO[Unit] = {
-      sql"""INSERT INTO users (email_address, search_id) VALUES
-           |(${user.emailAddress}, ${user.searchId})""".stripMargin.update.run
+      sql"""INSERT INTO users (email_address, search_id, start_date) VALUES
+           |(${user.emailAddress}, ${user.searchId}, ${user.startDate})""".stripMargin.update.run
         .transact(transactor)
         .void
     }
