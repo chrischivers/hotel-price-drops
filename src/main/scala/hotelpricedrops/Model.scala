@@ -8,7 +8,13 @@ import org.http4s.Uri
 
 object Model {
 
-  case class Screenshot(value: Array[Byte])
+  case class Screenshot(value: Array[Byte]) {
+    override def equals(obj: Any): Boolean = obj match {
+      case Screenshot(arr) =>
+        arr.toList == value.toList //required to assert equality in testing
+      case _ => false
+    }
+  }
 
   case class PriceDetails(seller: String, price: Int, url: Uri)
 

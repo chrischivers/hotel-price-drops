@@ -3,7 +3,7 @@ package hotelpricedrops.pricefetchers
 import cats.effect.IO
 import hotelpricedrops.ComparisonSite.Kayak
 import hotelpricedrops.Model.{Hotel, PriceDetails, Screenshot}
-import hotelpricedrops.utils.MockWebDriver
+import hotelpricedrops.utils.{MockWebDriver, MockWebElement}
 import hotelpricedrops.{ComparisonSite, Main}
 import org.http4s.Uri
 import org.scalactic.TypeCheckedTripleEquals
@@ -44,7 +44,17 @@ class PriceFetcherTest
 
     val testHotel = Hotel("Test Hotel", kayakUrl = Some(url), None, None)
 
-    val mockWebDriver = MockWebDriver()
+    val mockWebDriver = MockWebDriver(
+      elementsByClassName = Map(
+        "provider" -> List(
+          MockWebElement(
+            attributes = Map("id" -> "Agoda"),
+            elementsByClassName =
+              Map("price" -> List(MockWebElement(textOpt = Some("£100"))))
+          )
+        )
+      )
+    )
 
     val priceFetcher = PriceFetcher(
       mockWebDriver,
