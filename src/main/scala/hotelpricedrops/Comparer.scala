@@ -82,33 +82,31 @@ object Comparer {
                   allTimeLowestPriceResult.map(_.lowestPrice)
                 )
 
-                if (result.priceDetails.price < previousResult.lowestPrice) {
-
-                  logger.info(priceNotification.toText) >>
-                    (if (config.emailOnAllPriceDecreases)
-                       notifier.priceNotify(
-                         priceNotification,
-                         result.screenshot
-                       )
-                     else if (config.emailOnLowestPriceSinceCreated)
-                       notifier.priceNotify(
-                         priceNotification,
-                         result.screenshot
-                       )
-                     else IO.unit)
-                } else if (result.priceDetails.price > previousResult.lowestPrice) {
-                  logger.info(priceNotification.toText) >>
-                    (if (config.emailOnAllPriceIncreases)
-                       notifier.priceNotify(
-                         priceNotification,
-                         result.screenshot
-                       )
-                     else IO.unit)
-                } else {
-                  (if (config.emailOnPriceNoChange)
-                     notifier.priceNotify(priceNotification, result.screenshot)
-                   else IO.unit) >> logger.info(priceNotification.toText)
+                def maybeNotify(predicate: Boolean): IO[Boolean] = {
+                  if (predicate)
+                    notifier.priceNotify(priceNotification, result.screenshot) >> IO
+                      .pure(predicate)
+                  else IO.pure(predicate)
                 }
+
+                for {
+                  _ <- logger.info(priceNotification.toText)
+                  priceDropNotified <- maybeNotify(
+                    result.priceDetails.price < previousResult.lowestPrice && config.emailOnAllPriceDecreases
+                  )
+                  _ <- maybeNotify(
+                    !priceDropNotified &&
+                      allTimeLowestPriceResult.exists(
+                        _.lowestPrice > result.priceDetails.price && config.emailOnLowestPriceSinceCreated
+                      )
+                  )
+                  _ <- maybeNotify(
+                    result.priceDetails.price > previousResult.lowestPrice && config.emailOnAllPriceIncreases
+                  )
+                  _ <- maybeNotify(
+                    result.priceDetails.price == previousResult.lowestPrice && config.emailOnPriceNoChange
+                  )
+                } yield ()
               }
               _ <- resultsDB.persistResult(resultRecord)
             } yield ()
