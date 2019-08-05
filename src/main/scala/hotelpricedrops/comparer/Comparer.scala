@@ -1,9 +1,8 @@
-package hotelpricedrops
+package hotelpricedrops.comparer
 
 import cats.effect.IO
 import cats.syntax.flatMap._
-import hotelpricedrops.Config._
-import hotelpricedrops.Model.{Hotel, ReportedRateType, Result, Search, User}
+import hotelpricedrops.Model._
 import hotelpricedrops.db.ResultsDB
 import hotelpricedrops.notifier.PriceNotification.PriceNotificationConfig
 import hotelpricedrops.notifier.{Notifier, PriceNotification}

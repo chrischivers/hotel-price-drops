@@ -34,7 +34,7 @@ case class PriceNotification(to: String,
     s"${if (isAllTimeLowest) "** ALL TIME LOWEST PRICE **" else ""} Price Notification: ${hotelName} $priceMovementDesc"
 
   def toText =
-    s"${if (isAllTimeLowest) "*ALL TIME LOWEST PRICE*" else ""}" +
+    s"${if (isAllTimeLowest) "** ALL TIME LOWEST PRICE **" else ""}" +
       s"\nPrice for hotel ${hotelName} $priceMovementDesc " +
       s"\nSeller: ${seller}" +
       s"\nFound on: ${comparisonSiteName}" +
@@ -46,7 +46,7 @@ case class PriceNotification(to: String,
   def toHtml =
     s"""
        |${if (isAllTimeLowest)
-         s"<p>*** ALl TIME LOWEST PRICE for hotel <strong>${hotelName}</strong></p> ***"
+         s"<p>** ALL TIME LOWEST PRICE for hotel <strong>${hotelName}</strong></p> ***"
        else ""}
        |<p>Price for hotel <strong>${hotelName}</strong> $priceMovementDesc </p>
        |<p>Seller: <strong>${seller} </strong></p>

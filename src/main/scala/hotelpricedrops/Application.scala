@@ -7,6 +7,7 @@ import cats.syntax.traverse._
 import cats.instances.list._
 import doobie.hikari.HikariTransactor
 import hotelpricedrops.Model.{Search, User}
+import hotelpricedrops.comparer.Comparer
 import hotelpricedrops.db.{
   DBStaticLoader,
   HotelsDB,
