@@ -32,6 +32,10 @@ object Model {
                    kayakUrl: Option[Uri],
                    skyscannerUrl: Option[Uri],
                    trivagoUrl: Option[Uri]) {
+
+    def withId(id: Int): Hotel.WithId =
+      Hotel.WithId(id, name, kayakUrl, skyscannerUrl, trivagoUrl)
+
     def urlFor(comparisonSite: ComparisonSite) = {
       comparisonSite match {
         case ComparisonSite.Kayak      => kayakUrl
@@ -62,6 +66,8 @@ object Model {
   case class Search(checkInDate: LocalDate,
                     checkOutDate: LocalDate,
                     numberOfAdults: Int) {
+    def withId(id: Int) =
+      Search.WithId(id, checkInDate, checkOutDate, numberOfAdults)
     def numberOfNights = DAYS.between(checkInDate, checkOutDate).toInt
   }
 

@@ -27,6 +27,8 @@ libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core" % doobieVersion,
   "org.tpolecat" %% "doobie-hikari" % doobieVersion,
   "org.tpolecat" %% "doobie-postgres" % doobieVersion,
+  "org.tpolecat" %% "doobie-h2" % doobieVersion % Test,
   "org.flywaydb" % "flyway-core" % "4.2.0",
-  "com.github.wookietreiber" %% "scala-chart" % "0.5.1"
+  "com.h2database" % "h2" % "1.4.199" % Test,
+//  "com.github.wookietreiber" %% "scala-chart" % "0.5.1"
 )

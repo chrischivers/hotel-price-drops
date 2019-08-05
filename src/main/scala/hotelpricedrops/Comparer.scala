@@ -54,12 +54,12 @@ object Comparer {
         lowestPriceInResults.fold[IO[Unit]](error("No price results found")) {
           result =>
             for {
-              allTimeLowestPriceResult <- resultsDB.lowestPriceFor(
+              allTimeLowestPriceResult <- resultsDB.lowestPriceSince(
                 search.searchId,
                 hotel.hotelId,
                 user.startDate
               )
-              mostRecentLowestPriceResult <- resultsDB.mostRecentLowestPriceFor(
+              mostRecentLowestPriceResult <- resultsDB.mostRecentPriceFor(
                 search.searchId,
                 hotel.hotelId
               )

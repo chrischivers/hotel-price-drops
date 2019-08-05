@@ -22,7 +22,7 @@ object MockWebDriver {
     override def findElementsByClassName(
       className: String
     ): IO[List[WebElement]] =
-      elementsByClassName.values.flatten.toList
+      (elementsByClassName.values.flatten.toList ++ elementsByXPath.values.flatten.toList)
         .flatTraverse(_.findElementsByClassName(className))
         .map(_ ++ elementsByClassName.getOrElse(className, List.empty))
 

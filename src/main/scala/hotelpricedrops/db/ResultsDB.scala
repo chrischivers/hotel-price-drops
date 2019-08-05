@@ -10,13 +10,11 @@ import hotelpricedrops.Model.Result
 
 trait ResultsDB {
   def persistResult(result: Result): IO[Unit]
-  def lowestPriceFor(searchId: Int,
-                     hotelId: Int,
-                     since: Instant): IO[Option[Result.WithIdAndTimestamp]]
-  def mostRecentLowestPriceFor(
-    searchId: Int,
-    hotelId: Int
-  ): IO[Option[Result.WithIdAndTimestamp]]
+  def lowestPriceSince(searchId: Int,
+                       hotelId: Int,
+                       since: Instant): IO[Option[Result.WithIdAndTimestamp]]
+  def mostRecentPriceFor(searchId: Int,
+                         hotelId: Int): IO[Option[Result.WithIdAndTimestamp]]
 }
 
 object ResultsDB {
@@ -29,7 +27,7 @@ object ResultsDB {
         .void
     }
 
-    override def lowestPriceFor(
+    override def lowestPriceSince(
       searchId: Int,
       hotelId: Int,
       since: Instant
@@ -47,7 +45,7 @@ object ResultsDB {
         .transact(transactor)
     }
 
-    override def mostRecentLowestPriceFor(
+    override def mostRecentPriceFor(
       searchId: Int,
       hotelId: Int
     ): IO[Option[Result.WithIdAndTimestamp]] = {

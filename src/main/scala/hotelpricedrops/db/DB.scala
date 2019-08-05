@@ -30,6 +30,7 @@ object DB {
           IO(
             s"jdbc:postgresql://${config.host}:${config.port}/${config.dbName}"
           )
+        case "org.h2.Driver" => IO(config.host)
         case other =>
           IO.raiseError(
             new RuntimeException(s"Unsupported database driver $other")
@@ -43,20 +44,16 @@ object DB {
         connectEC,
         transactEC
       ).evalMap { tx =>
-          tx.configure { dataSource =>
-              IO {
-                dataSource.setMaximumPoolSize(config.maximumPoolSize)
-                println("before migrations")
-                val flyway = new Flyway()
-                println("here1")
-                flyway.setDataSource(dataSource)
-                flyway.setLocations("db/migration")
-                println("here2")
-                flyway.migrate()
-                println("after migrations")
-              }
+        tx.configure { dataSource =>
+            IO {
+              dataSource.setMaximumPoolSize(config.maximumPoolSize)
+              val flyway = new Flyway()
+              flyway.setDataSource(dataSource)
+              flyway.setLocations("db/migration")
+              flyway.migrate()
             }
-            .as(tx)
-        }
+          }
+          .as(tx)
+      }
     } yield transactor
 }
