@@ -2,7 +2,7 @@ package hotelpricedrops
 
 import java.time.Instant
 
-import cats.effect.{IO, Timer}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.traverse._
 import cats.instances.list._
 import doobie.hikari.HikariTransactor
@@ -27,7 +27,8 @@ object Application {
                        config: Config.Config)
 
   def run(resources: Resources)(implicit logger: Logger[IO],
-                                timer: Timer[IO]) = {
+                                timer: Timer[IO],
+                                contextShift: ContextShift[IO]) = {
 
     val hotelsDb = HotelsDB(resources.db)
     val searchesDb = SearchesDB(resources.db)
@@ -81,7 +82,9 @@ object Application {
                     user: User,
                     hotelsDB: HotelsDB,
                     priceFetchers: List[PriceFetcher],
-                    comparer: Comparer)(implicit logger: Logger[IO]) = {
+                    comparer: Comparer)(implicit logger: Logger[IO],
+                                        timer: Timer[IO],
+                                        contextShift: ContextShift[IO]) = {
     for {
       allHotels <- hotelsDB.allHotels
       _ <- allHotels.traverse { hotel =>
