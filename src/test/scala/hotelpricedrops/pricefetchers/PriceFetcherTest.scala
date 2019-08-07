@@ -32,7 +32,7 @@ class PriceFetcherTest
             .getPriceDetailsFor(testHotel, 1)
             .unsafeRunSync() should ===(
             Some(
-              PriceFetcher.Results(
+              PriceFetcher.Result(
                 comparisonSite,
                 PriceDetails("Unknown", 100, url),
                 Screenshot(Array.empty[Byte])

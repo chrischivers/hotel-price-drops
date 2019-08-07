@@ -13,7 +13,7 @@ trait Comparer {
   def compareAndNotify(hotel: Hotel.WithId,
                        search: Search.WithId,
                        user: User,
-                       results: List[PriceFetcher.Results]): IO[Unit]
+                       results: List[PriceFetcher.Result]): IO[Unit]
 }
 
 object Comparer {
@@ -28,7 +28,7 @@ object Comparer {
         hotel: Hotel.WithId,
         search: Search.WithId,
         user: User,
-        results: List[PriceFetcher.Results]
+        results: List[PriceFetcher.Result]
       ): IO[Unit] = {
 
         def error(reason: String): IO[Unit] = {

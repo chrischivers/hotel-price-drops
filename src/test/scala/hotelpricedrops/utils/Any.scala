@@ -2,7 +2,7 @@ package hotelpricedrops.utils
 
 import java.time.{Instant, LocalDate}
 
-import hotelpricedrops.Model.{Hotel, Result, Search, User}
+import hotelpricedrops.Model.{Hotel, Result, Screenshot, Search, User}
 import org.http4s.Uri
 
 import scala.util.Random
@@ -17,4 +17,5 @@ object Any {
   def user = User(str, 1, Instant.now)
   def search = Search(date, date.plusDays(from(1 to 7).toLong), from(1 to 5))
   def result = Result(1, 1, from(50 to 150), "Kayak")
+  def screenshot = Screenshot(Array.empty[Byte])
 }

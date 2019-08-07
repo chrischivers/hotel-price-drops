@@ -17,16 +17,16 @@ trait PriceFetcher {
   def comparisonSite: ComparisonSite
 
   def getPriceDetailsFor(hotel: Hotel,
-                         nights: Int): IO[Option[PriceFetcher.Results]]
+                         nights: Int): IO[Option[PriceFetcher.Result]]
 }
 
 object PriceFetcher {
 
   type ErrorString = String
 
-  case class Results(comparisonSite: ComparisonSite,
-                     priceDetails: PriceDetails,
-                     screenshot: Screenshot)
+  case class Result(comparisonSite: ComparisonSite,
+                    priceDetails: PriceDetails,
+                    screenshot: Screenshot)
 
   def apply(
     driver: WebDriver,
@@ -44,11 +44,11 @@ object PriceFetcher {
       override def getPriceDetailsFor(
         hotel: Hotel,
         nights: Int
-      ): IO[Option[pricefetchers.PriceFetcher.Results]] = {
+      ): IO[Option[pricefetchers.PriceFetcher.Result]] = {
 
         hotel
           .urlFor(comparisonSite)
-          .fold[IO[Option[PriceFetcher.Results]]](IO.pure(None)) { url =>
+          .fold[IO[Option[PriceFetcher.Result]]](IO.pure(None)) { url =>
             val getResults = for {
               _ <- logger.info(
                 s"Looking up prices for hotel ${hotel.name} on ${comparisonSite.name}"
@@ -71,7 +71,7 @@ object PriceFetcher {
             } yield {
               Some(
                 PriceFetcher
-                  .Results(comparisonSite, priceDetails, screenshot)
+                  .Result(comparisonSite, priceDetails, screenshot)
               )
             }
 

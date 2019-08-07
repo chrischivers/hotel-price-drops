@@ -19,7 +19,7 @@ object Hotels {
     nights: Int
   )(implicit logger: Logger[IO],
     timer: Timer[IO],
-    contextShift: ContextShift[IO]): IO[List[PriceFetcher.Results]] = {
+    contextShift: ContextShift[IO]): IO[List[PriceFetcher.Result]] = {
     priceFetchers
       .traverse { fetcher =>
         fetcher
