@@ -11,7 +11,48 @@
         </encoder>
     </appender>
 
+
+    <appender name="ELASTIC" class="com.internetitem.logback.elasticsearch.ElasticsearchAppender">
+        <url>xxxxxxx</url>
+        <index>logstash-%date{yyyy-MM-dd}</index>
+        <type>hpd</type>
+        <properties>
+            <property>
+                <name>appname</name>
+                <value>hpd</value>
+            </property>
+            <property>
+                <name>host</name>
+                <value>${HOSTNAME}</value>
+                <allowEmpty>false</allowEmpty>
+            </property>
+            <property>
+                <name>severity</name>
+                <value>%level</value>
+            </property>
+            <property>
+                <name>thread</name>
+                <value>%thread</value>
+            </property>
+            <property>
+                <name>stacktrace</name>
+                <value>%ex</value>
+            </property>
+            <property>
+                <name>logger</name>
+                <value>%logger</value>
+            </property>
+        </properties>
+        <headers>
+            <header>
+                <name>Content-Type</name>
+                <value>text/plain</value>
+            </header>
+        </headers>
+    </appender>
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
+        <appender-ref ref="ELASTIC"/>
     </root>
 </configuration>

@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   "org.seleniumhq.selenium" % "selenium-java" % "3.141.59",
   "io.chrisdavenport" %% "log4cats-slf4j" % "0.3.0",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
+  "com.internetitem" % "logback-elasticsearch-appender" % "1.6",
   "org.typelevel" %% "cats-effect" % "1.3.1",
   "org.http4s" %% "http4s-dsl" % http4sVersion,
   "org.http4s" %% "http4s-core" % http4sVersion,
