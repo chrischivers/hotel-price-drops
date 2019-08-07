@@ -1,3 +1,5 @@
+enablePlugins(WriteOutputToFile)
+
 name := "hotel-price-drops"
 
 version := "0.1"
@@ -32,3 +34,6 @@ libraryDependencies ++= Seq(
   "com.h2database" % "h2" % "1.4.199" % Test,
 //  "com.github.wookietreiber" %% "scala-chart" % "0.5.1"
 )
+
+writeOutputToFile_outputFile := file("/tmp/hotel-price-drops.log")
+writeOutputToFile_append := true
