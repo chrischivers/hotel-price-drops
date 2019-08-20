@@ -23,7 +23,7 @@ object WebDriver {
       val options = new FirefoxOptions()
       options.setHeadless(headless)
       new FirefoxDriver(options)
-    })(driver => IO(driver.close()))
+    })(driver => IO(driver.quit()))
   }
 
   def resource(geckoDriverPath: String, headless: Boolean = false) = {
