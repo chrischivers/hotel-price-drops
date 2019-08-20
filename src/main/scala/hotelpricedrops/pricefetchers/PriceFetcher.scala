@@ -2,7 +2,7 @@ package hotelpricedrops.pricefetchers
 
 import java.time.Instant
 
-import cats.effect.{IO, Timer}
+import cats.effect.{IO, Resource, Timer}
 import cats.syntax.flatMap._
 import hotelpricedrops.Model.{Hotel, PriceDetails, ReportedRateType, Screenshot}
 import hotelpricedrops.selenium.WebDriver
@@ -29,7 +29,7 @@ object PriceFetcher {
                     screenshot: Screenshot)
 
   def apply(
-    driver: WebDriver,
+    driverResource: Resource[IO, WebDriver],
     site: ComparisonSite,
     screenshotOnError: Boolean,
     notifyOnError: (ErrorString, Screenshot) => IO[Unit]
@@ -46,44 +46,46 @@ object PriceFetcher {
         nights: Int
       ): IO[Option[pricefetchers.PriceFetcher.Result]] = {
 
-        hotel
-          .urlFor(comparisonSite)
-          .fold[IO[Option[PriceFetcher.Result]]](IO.pure(None)) { url =>
-            val getResults = for {
-              _ <- logger.info(
-                s"Looking up prices for hotel ${hotel.name} on ${comparisonSite.name}"
-              )
-              _ <- driver.setUrl(url).withRetry(3)
-              _ <- waitToBeReady(driver)()
-              priceDetails <- comparisonSite.getLowestPrice(driver)
-              _ <- logger.info(
-                s"lowest price retried from ${comparisonSite.name} for ${hotel.name} is ${priceDetails.price}"
-              )
-              nightlyPrice = comparisonSite.reportedRateType match {
-                case ReportedRateType.Nightly => priceDetails.price
-                case ReportedRateType.Entirety =>
-                  priceDetails.price / nights
+        driverResource.use { driver =>
+          hotel
+            .urlFor(comparisonSite)
+            .fold[IO[Option[PriceFetcher.Result]]](IO.pure(None)) { url =>
+              val getResults = for {
+                _ <- logger.info(
+                  s"Looking up prices for hotel ${hotel.name} on ${comparisonSite.name}"
+                )
+                _ <- driver.setUrl(url).withRetry(3)
+                _ <- waitToBeReady(driver)()
+                priceDetails <- comparisonSite.getLowestPrice(driver)
+                _ <- logger.info(
+                  s"lowest price retried from ${comparisonSite.name} for ${hotel.name} is ${priceDetails.price}"
+                )
+                nightlyPrice = comparisonSite.reportedRateType match {
+                  case ReportedRateType.Nightly => priceDetails.price
+                  case ReportedRateType.Entirety =>
+                    priceDetails.price / nights
+                }
+                _ <- logger.info(
+                  s"Found nightly price of £$nightlyPrice on ${comparisonSite.name} for hotel ${hotel.name} (on ${priceDetails.seller})"
+                )
+                screenshot <- driver.takeScreenshot
+              } yield {
+                Some(
+                  PriceFetcher
+                    .Result(comparisonSite, priceDetails, screenshot)
+                )
               }
-              _ <- logger.info(
-                s"Found nightly price of £$nightlyPrice on ${comparisonSite.name} for hotel ${hotel.name} (on ${priceDetails.seller})"
-              )
-              screenshot <- driver.takeScreenshot
-            } yield {
-              Some(
-                PriceFetcher
-                  .Result(comparisonSite, priceDetails, screenshot)
-              )
-            }
 
-            getResults.handleErrorWith { err =>
-              (if (screenshotOnError) {
-                 driver.takeScreenshot
-                   .flatMap(
-                     screenshot => notifyOnError(err.toString, screenshot)
-                   )
-               } else IO.unit) >> IO.raiseError(err)
+              getResults.handleErrorWith { err =>
+                (if (screenshotOnError) {
+                   driver.takeScreenshot
+                     .flatMap(
+                       screenshot => notifyOnError(err.toString, screenshot)
+                     )
+                 } else IO.unit) >> IO.raiseError(err)
+              }
             }
-          }
+        }
       }
 
       private def waitToBeReady(webDriver: WebDriver)(

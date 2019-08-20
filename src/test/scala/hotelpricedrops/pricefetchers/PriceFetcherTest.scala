@@ -1,6 +1,6 @@
 package hotelpricedrops.pricefetchers
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import hotelpricedrops.ComparisonSite.{Kayak, SkyScanner, Trivago}
 import hotelpricedrops.Model.{Hotel, PriceDetails, Screenshot}
 import hotelpricedrops.utils.{MockWebDriver, MockWebElement}
@@ -104,14 +104,14 @@ class PriceFetcherTest
       )
     )
 
-    val webDriver = comparisonSite match {
-      case Kayak      => kayakMockWebDriver
-      case SkyScanner => skyscannerMockWebDriver
-      case Trivago    => trivagoMockWebDriver
+    val webDriverResource = comparisonSite match {
+      case Kayak      => Resource.liftF(IO(kayakMockWebDriver))
+      case SkyScanner => Resource.liftF(IO(skyscannerMockWebDriver))
+      case Trivago    => Resource.liftF(IO(trivagoMockWebDriver))
     }
 
     val priceFetcher = PriceFetcher(
-      webDriver,
+      webDriverResource,
       comparisonSite,
       screenshotOnError = false,
       (_, _) => IO.unit

@@ -9,16 +9,16 @@ import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
 import scala.concurrent.duration.FiniteDuration
 
+case class Config(emailerConfig: EmailerConfig,
+                  dbConfig: DB.Config,
+                  geckoDriverPath: String,
+                  timeBetweenRuns: FiniteDuration,
+                  priceNotificationConfig: PriceNotificationConfig)
+
 object Config {
 
-  case class Config(emailerConfig: EmailerConfig,
-                    dbConfig: DB.Config,
-                    geckoDriverPath: String,
-                    timeBetweenRuns: FiniteDuration,
-                    priceNotificationConfig: PriceNotificationConfig)
-
   //TODO put into effect
-  def apply() = {
+  def load() = {
     val config = ConfigFactory.load()
     Config(
       config.as[EmailerConfig]("emailerConfig"),

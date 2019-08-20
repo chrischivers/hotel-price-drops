@@ -3,7 +3,6 @@ package hotelpricedrops
 import java.util.concurrent.Executors
 
 import cats.effect._
-import hotelpricedrops.Application.Resources
 import hotelpricedrops.db.DB
 import hotelpricedrops.selenium.WebDriver
 import io.chrisdavenport.log4cats.SelfAwareStructuredLogger
@@ -26,18 +25,14 @@ object Main extends IOApp.WithContext {
 
   override def run(args: List[String]): IO[ExitCode] = {
 
-    val config = Config()
-
-    val resources = for {
-      _ <- Resource.liftF(logger.info("Loading application resources"))
-      db <- DB.transactorResource(config.dbConfig)
-      webDriver <- WebDriver(config.geckoDriverPath, headless = true)
-    } yield Resources(webDriver, db, config)
+    val config = Config.load()
 
     def runner: IO[Unit] = {
-      resources
-        .use { resources =>
-          Application.run(resources)
+      DB.transactorResource(config.dbConfig)
+        .use { db =>
+          val webDriverResource =
+            WebDriver.resource(config.geckoDriverPath, headless = true)
+          Application.run(db, webDriverResource, config)
         }
         .flatMap(_ => timer.sleep(config.timeBetweenRuns))
         .flatMap(_ => runner)

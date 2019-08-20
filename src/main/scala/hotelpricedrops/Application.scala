@@ -2,7 +2,7 @@ package hotelpricedrops
 
 import java.time.Instant
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{ContextShift, IO, Resource, Timer}
 import cats.syntax.traverse._
 import cats.instances.list._
 import doobie.hikari.HikariTransactor
@@ -22,44 +22,42 @@ import io.chrisdavenport.log4cats.Logger
 
 object Application {
 
-  case class Resources(webDriver: WebDriver,
-                       db: HikariTransactor[IO],
-                       config: Config.Config)
+  def run(db: HikariTransactor[IO],
+          webDriverResource: Resource[IO, WebDriver],
+          config: Config)(implicit logger: Logger[IO],
+                          timer: Timer[IO],
+                          contextShift: ContextShift[IO]) = {
 
-  def run(resources: Resources)(implicit logger: Logger[IO],
-                                timer: Timer[IO],
-                                contextShift: ContextShift[IO]) = {
+    val hotelsDb = HotelsDB(db)
+    val searchesDb = SearchesDB(db)
+    val resultsDb = ResultsDB(db)
+    val usersDb = UsersDB(db)
 
-    val hotelsDb = HotelsDB(resources.db)
-    val searchesDb = SearchesDB(resources.db)
-    val resultsDb = ResultsDB(resources.db)
-    val usersDb = UsersDB(resources.db)
-
-    val notifier = EmailNotifier(resources.config.emailerConfig)
+    val notifier = EmailNotifier(config.emailerConfig)
 
     val priceFetchers =
       List(
         PriceFetcher(
-          resources.webDriver,
+          webDriverResource,
           ComparisonSite.Kayak,
-          resources.config.priceNotificationConfig.emailScreenshotOnError,
+          config.priceNotificationConfig.emailScreenshotOnError,
           notifier.errorNotify
         ),
         PriceFetcher(
-          resources.webDriver,
+          webDriverResource,
           ComparisonSite.SkyScanner,
-          resources.config.priceNotificationConfig.emailScreenshotOnError,
+          config.priceNotificationConfig.emailScreenshotOnError,
           notifier.errorNotify
         ),
         PriceFetcher(
-          resources.webDriver,
+          webDriverResource,
           ComparisonSite.Trivago,
-          resources.config.priceNotificationConfig.emailScreenshotOnError,
+          config.priceNotificationConfig.emailScreenshotOnError,
           notifier.errorNotify
         )
       )
     val comparer =
-      Comparer(resultsDb, notifier, resources.config.priceNotificationConfig)
+      Comparer(resultsDb, notifier, config.priceNotificationConfig)
 
     for {
       _ <- logger.info(s"Starting run at ${Instant.now().toString}")

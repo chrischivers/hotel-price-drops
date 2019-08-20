@@ -26,7 +26,7 @@ object WebDriver {
     })(driver => IO(driver.close()))
   }
 
-  def apply(geckoDriverPath: String, headless: Boolean = false) = {
+  def resource(geckoDriverPath: String, headless: Boolean = false) = {
     for {
       _ <- Resource.liftF(
         IO(System.setProperty("webdriver.gecko.driver", geckoDriverPath))
